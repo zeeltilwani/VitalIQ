@@ -2,15 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import api from '../api';
 import DailySummaryCard from '../components/DailySummaryCard';
 import SuggestionCard from '../components/SuggestionCard';
+import { useTheme } from '../context/ThemeContext';
 
 const GLASS_ML = 250;
 const GLASS_GOAL = 8;
-
-import { useTheme } from '../context/ThemeContext';
 
 export default function Dashboard({ route, navigation }) {
     const isFocused = useIsFocused();
@@ -48,7 +47,6 @@ export default function Dashboard({ route, navigation }) {
 
     const dailyGoal = user?.daily_calorie_goal || 2000;
     const glassCount = Math.floor(summary.water / GLASS_ML);
-    const calorieProgress = Math.min((summary.calories / dailyGoal) * 100, 100);
 
     const updateWater = async (glasses) => {
         const ml = glasses * GLASS_ML;
@@ -74,36 +72,36 @@ export default function Dashboard({ route, navigation }) {
         return <View style={styles.glassRow}>{glasses}</View>;
     };
 
-    // ─── Progress Ring (simplified bar) ───
+    // ─── Progress Bar ───
     const ProgressBar = ({ current, total, color }) => (
-        <View style={styles.progressBarBg}>
+        <View style={[styles.progressBarBg, { backgroundColor: theme.surfaceLight }]}>
             <View style={[styles.progressBarFill, { width: `${Math.min((current / total) * 100, 100)}%`, backgroundColor: color }]} />
         </View>
     );
 
     // ─── Meal Card ───
     const MealCard = ({ title, data, icon }) => (
-        <View style={styles.mealCard}>
-            <View style={styles.mealHeader}>
+        <View style={[styles.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={[styles.mealHeader, { borderBottomColor: theme.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={styles.mealIcon}>{icon}</Text>
-                    <Text style={styles.mealTitle}>{title}</Text>
-                    <Text style={styles.mealKcal}>{data.reduce((a, c) => a + c.calories, 0)} kcal</Text>
+                    <Text style={[styles.mealTitle, { color: theme.text }]}>{title}</Text>
+                    <Text style={[styles.mealKcal, { color: theme.textSecondary }]}>{data.reduce((a, c) => a + c.calories, 0)} kcal</Text>
                 </View>
                 <TouchableOpacity
-                    style={styles.mealAddBtn}
+                    style={[styles.mealAddBtn, { backgroundColor: theme.primaryLight }]}
                     onPress={() => navigation.navigate('Log Food', { mealType: title })}
                 >
-                    <Text style={styles.mealAddText}>+</Text>
+                    <Text style={[styles.mealAddText, { color: theme.primary }]}>+</Text>
                 </TouchableOpacity>
             </View>
             {data.length === 0 ? (
-                <Text style={styles.emptyText}>Nothing logged yet</Text>
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Nothing logged yet</Text>
             ) : (
                 data.map((item, i) => (
                     <View key={i} style={styles.foodRow}>
-                        <Text style={styles.foodName}>{item.food_name}</Text>
-                        <Text style={styles.foodCal}>{item.calories} kcal</Text>
+                        <Text style={[styles.foodName, { color: theme.text }]}>{item.food_name}</Text>
+                        <Text style={[styles.foodCal, { color: theme.textSecondary }]}>{item.calories} kcal</Text>
                     </View>
                 ))
             )}
@@ -167,7 +165,7 @@ export default function Dashboard({ route, navigation }) {
                     <ProgressBar current={summary.calories} total={dailyGoal} color={theme.primary} />
                 </View>
 
-                {/* ─── Water Tracker (Glasses) ─── */}
+                {/* ─── Water Tracker ─── */}
                 <View style={[styles.waterCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     <View style={styles.waterHeader}>
                         <Text style={[styles.waterTitle, { color: theme.text }]}>💧 Water Intake</Text>
@@ -178,7 +176,7 @@ export default function Dashboard({ route, navigation }) {
                     <GlassRow />
                     <View style={styles.waterControls}>
                         <TouchableOpacity
-                            style={[styles.waterCtrlBtn, styles.waterMinusBtn, { backgroundColor: theme.surfaceLight }]}
+                            style={[styles.waterCtrlBtn, { backgroundColor: theme.surfaceLight }]}
                             onPress={() => updateWater(-1)}
                         >
                             <Text style={[styles.waterCtrlText, { color: theme.text }]}>−</Text>
@@ -190,12 +188,9 @@ export default function Dashboard({ route, navigation }) {
                             style={[styles.waterCtrlBtn, { backgroundColor: theme.primary }]}
                             onPress={() => updateWater(1)}
                         >
-                            <Text style={styles.waterCtrlText}>+</Text>
+                            <Text style={[styles.waterCtrlText, { color: '#fff' }]}>+</Text>
                         </TouchableOpacity>
                     </View>
-                    {glassCount >= GLASS_GOAL && (
-                        <Text style={[styles.waterDoneText, { color: theme.primary }]}>🎉 Daily goal reached!</Text>
-                    )}
                 </View>
 
                 {/* ─── Stats Row ─── */}
@@ -224,12 +219,6 @@ export default function Dashboard({ route, navigation }) {
                     </Text>
                 </View>
 
-                {/* ─── Daily Summary ─── */}
-                <DailySummaryCard consumed={summary.calories} goal={dailyGoal} />
-
-                {/* ─── Meal Suggestion ─── */}
-                <SuggestionCard consumed={summary.calories} goal={dailyGoal} />
-
                 {/* ─── Meal Breakdown ─── */}
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Meal Breakdown</Text>
                 <MealCard title="Breakfast" data={meals.Breakfast} icon="🍳" />
@@ -244,104 +233,88 @@ export default function Dashboard({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: SPACING.xl },
-    loader: { flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center' },
-
-    // Top row
+    container: { flex: 1, paddingHorizontal: SPACING.xl },
+    loader: { flex: 1, justifyContent: 'center' },
     topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md, marginBottom: SPACING.xl },
-    greeting: { fontSize: FONT.xxl, fontWeight: FONT.black, color: COLORS.text },
-    dateText: { color: COLORS.textSecondary, fontSize: FONT.sm, marginTop: SPACING.xs },
+    greeting: { fontSize: FONT.xxl, fontWeight: FONT.black },
+    dateText: { fontSize: FONT.sm, marginTop: SPACING.xs },
     avatarBtn: {
         width: 44, height: 44, borderRadius: 22,
-        backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
+        justifyContent: 'center', alignItems: 'center',
     },
-    avatarText: { color: COLORS.textInverse, fontSize: FONT.lg, fontWeight: FONT.bold },
-
-    // Quick actions
+    avatarText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
     quickRow: { flexDirection: 'row', marginBottom: SPACING.xl },
     quickBtn: {
-        backgroundColor: COLORS.surface, flex: 1, marginRight: SPACING.md,
+        flex: 1, marginRight: SPACING.md,
         paddingVertical: SPACING.lg, borderRadius: RADIUS.lg,
-        alignItems: 'center', borderWidth: 1, borderColor: COLORS.border,
+        alignItems: 'center', borderWidth: 1,
     },
     quickIcon: { fontSize: 22, marginBottom: SPACING.xs },
-    quickLabel: { color: COLORS.text, fontSize: FONT.sm, fontWeight: FONT.semibold },
-
-    // Calorie card
+    quickLabel: { fontSize: FONT.sm, fontWeight: '600' },
     calorieCard: {
-        backgroundColor: COLORS.surface, padding: SPACING.xl, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.lg, borderWidth: 1, borderColor: COLORS.border,
+        padding: SPACING.xl, borderRadius: RADIUS.xl,
+        marginBottom: SPACING.lg, borderWidth: 1,
     },
     calorieRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
     calorieCol: { alignItems: 'center', flex: 1 },
-    calorieLabel: { color: COLORS.textSecondary, fontSize: FONT.xs, fontWeight: FONT.medium, marginBottom: SPACING.xs },
-    calorieVal: { color: COLORS.text, fontSize: FONT.xxl, fontWeight: FONT.black },
-    calorieUnit: { color: COLORS.textSecondary, fontSize: FONT.xs },
-    calorieDivider: { height: 30, width: 1, backgroundColor: COLORS.border },
-    progressBarBg: { height: 6, backgroundColor: COLORS.surfaceLight, borderRadius: 3, overflow: 'hidden' },
+    calorieLabel: { fontSize: FONT.xs, fontWeight: '500', marginBottom: SPACING.xs },
+    calorieVal: { fontSize: FONT.xxl, fontWeight: '900' },
+    calorieUnit: { fontSize: FONT.xs },
+    calorieDivider: { height: 30, width: 1 },
+    progressBarBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
     progressBarFill: { height: '100%', borderRadius: 3 },
-
-    // Water tracker
     waterCard: {
-        backgroundColor: COLORS.surface, padding: SPACING.xl, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.lg, borderWidth: 1, borderColor: COLORS.border,
+        padding: SPACING.xl, borderRadius: RADIUS.xl,
+        marginBottom: SPACING.lg, borderWidth: 1,
     },
     waterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
-    waterTitle: { color: COLORS.text, fontSize: FONT.lg, fontWeight: FONT.bold },
-    waterGoalText: { color: COLORS.primary, fontSize: FONT.sm, fontWeight: FONT.semibold },
+    waterTitle: { fontSize: FONT.lg, fontWeight: 'bold' },
+    waterGoalText: { fontSize: FONT.sm, fontWeight: '600' },
     glassRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: SPACING.md },
     glassIcon: { fontSize: 28, marginHorizontal: SPACING.xs, marginVertical: SPACING.xs, opacity: 0.25 },
     glassIconActive: { opacity: 1 },
     waterControls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     waterCtrlBtn: {
         width: 44, height: 44, borderRadius: 22,
-        backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
+        justifyContent: 'center', alignItems: 'center',
         ...SHADOW.sm,
     },
-    waterMinusBtn: { backgroundColor: COLORS.surfaceLight },
-    waterCtrlText: { color: COLORS.textInverse, fontSize: 22, fontWeight: FONT.bold, lineHeight: 24 },
-    waterCountText: { color: COLORS.text, fontSize: FONT.lg, fontWeight: FONT.semibold, marginHorizontal: SPACING.xl },
-    waterDoneText: { color: COLORS.primary, textAlign: 'center', marginTop: SPACING.md, fontWeight: FONT.semibold, fontSize: FONT.sm },
-
-    // Stats row
+    waterCtrlText: { fontSize: 22, fontWeight: 'bold', lineHeight: 24 },
+    waterCountText: { fontSize: FONT.lg, fontWeight: '600', marginHorizontal: SPACING.xl },
     statsRow: { flexDirection: 'row', marginBottom: SPACING.lg },
     statBox: {
-        backgroundColor: COLORS.surface, flex: 1, marginRight: SPACING.md,
+        flex: 1, marginRight: SPACING.md,
         padding: SPACING.lg, borderRadius: RADIUS.xl, alignItems: 'center',
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
     },
     statIcon: { fontSize: 24, marginBottom: SPACING.sm },
-    statValue: { color: COLORS.text, fontSize: FONT.lg, fontWeight: FONT.bold },
-    statLabel: { color: COLORS.textSecondary, fontSize: FONT.xs, marginTop: SPACING.xs },
-
-    // Tip
+    statValue: { fontSize: FONT.lg, fontWeight: 'bold' },
+    statLabel: { fontSize: FONT.xs, marginTop: SPACING.xs },
     tipCard: {
-        backgroundColor: COLORS.infoLight, padding: SPACING.lg, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.xl, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.15)',
+        padding: SPACING.lg, borderRadius: RADIUS.xl,
+        marginBottom: SPACING.xl, borderWidth: 1,
     },
-    tipTitle: { color: COLORS.info, fontWeight: FONT.bold, fontSize: FONT.sm, marginBottom: SPACING.sm },
-    tipText: { color: COLORS.text, fontSize: FONT.sm, lineHeight: 20 },
-
-    // Meals
-    sectionTitle: { color: COLORS.text, fontSize: FONT.xl, fontWeight: FONT.bold, marginBottom: SPACING.lg },
+    tipTitle: { fontWeight: 'bold', fontSize: FONT.sm, marginBottom: SPACING.sm },
+    tipText: { fontSize: FONT.sm, lineHeight: 20 },
+    sectionTitle: { fontSize: FONT.xl, fontWeight: 'bold', marginBottom: SPACING.lg },
     mealCard: {
-        backgroundColor: COLORS.surface, padding: SPACING.lg, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border,
+        padding: SPACING.lg, borderRadius: RADIUS.xl,
+        marginBottom: SPACING.md, borderWidth: 1,
     },
     mealHeader: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingBottom: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: SPACING.md,
+        paddingBottom: SPACING.md, borderBottomWidth: 1, marginBottom: SPACING.md,
     },
     mealIcon: { fontSize: 18, marginRight: SPACING.sm },
-    mealTitle: { fontSize: FONT.md, fontWeight: FONT.semibold, color: COLORS.text },
-    mealKcal: { color: COLORS.textSecondary, fontSize: FONT.sm, marginLeft: SPACING.sm },
+    mealTitle: { fontSize: FONT.md, fontWeight: '600' },
+    mealKcal: { fontSize: FONT.sm, marginLeft: SPACING.sm },
     mealAddBtn: {
-        backgroundColor: COLORS.primaryLight, width: 30, height: 30,
+        width: 30, height: 30,
         borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center',
     },
-    mealAddText: { color: COLORS.primary, fontSize: 20, fontWeight: FONT.bold, lineHeight: 22 },
-    emptyText: { color: COLORS.textSecondary, textAlign: 'center', fontStyle: 'italic', fontSize: FONT.sm, paddingVertical: SPACING.sm },
+    mealAddText: { fontSize: 20, fontWeight: 'bold', lineHeight: 22 },
+    emptyText: { textAlign: 'center', fontStyle: 'italic', fontSize: FONT.sm, paddingVertical: SPACING.sm },
     foodRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: SPACING.sm },
-    foodName: { color: COLORS.text, fontSize: FONT.md },
-    foodCal: { color: COLORS.textSecondary, fontSize: FONT.sm },
+    foodName: { fontSize: FONT.md },
+    foodCal: { fontSize: FONT.sm },
 });

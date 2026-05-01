@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONT } from '../theme';
 
 const PLANS = [
     {
@@ -144,39 +145,40 @@ const PLANS = [
 
 export default function DietPlansScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const { theme } = useTheme();
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
             <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-                <Text style={styles.headerTitle}>Diet Plans</Text>
-                <Text style={styles.headerSub}>Curated nutrition plans for every goal</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Diet Plans</Text>
+                <Text style={[styles.headerSub, { color: theme.textSecondary }]}>Curated nutrition plans for every goal</Text>
 
                 {PLANS.map((plan) => (
                     <TouchableOpacity
                         key={plan.id}
-                        style={styles.card}
+                        style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
                         onPress={() => navigation.navigate('DietPlanDetail', { plan })}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.iconBox}>
+                        <View style={[styles.iconBox, { backgroundColor: theme.primaryLight }]}>
                             <Text style={styles.icon}>{plan.icon}</Text>
                         </View>
                         <View style={styles.cardContent}>
-                            <Text style={styles.cardTitle}>{plan.title}</Text>
-                            <Text style={styles.cardDesc}>{plan.desc}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.text }]}>{plan.title}</Text>
+                            <Text style={[styles.cardDesc, { color: theme.textSecondary }]}>{plan.desc}</Text>
                             <View style={styles.badgeRow}>
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{plan.category}</Text>
+                                <View style={[styles.badge, { backgroundColor: theme.surfaceLight }]}>
+                                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{plan.category}</Text>
                                 </View>
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{plan.duration}</Text>
+                                <View style={[styles.badge, { backgroundColor: theme.surfaceLight }]}>
+                                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{plan.duration}</Text>
                                 </View>
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{plan.totalCalories} kcal/day</Text>
+                                <View style={[styles.badge, { backgroundColor: theme.surfaceLight }]}>
+                                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{plan.totalCalories} kcal/day</Text>
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.arrow}>›</Text>
+                        <Text style={[styles.arrow, { color: theme.textSecondary }]}>›</Text>
                     </TouchableOpacity>
                 ))}
 
@@ -187,29 +189,29 @@ export default function DietPlansScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
+    container: { flex: 1 },
     inner: { padding: SPACING.xl },
-    headerTitle: { fontSize: FONT.title, fontWeight: FONT.black, color: COLORS.text },
-    headerSub: { fontSize: FONT.sm, color: COLORS.textSecondary, marginBottom: SPACING.xl, marginTop: SPACING.xs },
+    headerTitle: { fontSize: FONT.title, fontWeight: FONT.black },
+    headerSub: { fontSize: FONT.sm, marginBottom: SPACING.xl, marginTop: SPACING.xs },
 
     card: {
-        backgroundColor: COLORS.surface, padding: SPACING.lg, borderRadius: RADIUS.xl,
+        padding: SPACING.lg, borderRadius: RADIUS.xl,
         marginBottom: SPACING.md, flexDirection: 'row', alignItems: 'center',
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
     },
     iconBox: {
-        backgroundColor: COLORS.primaryLight, width: 52, height: 52,
+        width: 52, height: 52,
         borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.lg,
     },
     icon: { fontSize: 26 },
     cardContent: { flex: 1 },
-    cardTitle: { color: COLORS.text, fontSize: FONT.md, fontWeight: FONT.bold, marginBottom: SPACING.xs },
-    cardDesc: { color: COLORS.textSecondary, fontSize: FONT.sm, lineHeight: 18, marginBottom: SPACING.sm },
+    cardTitle: { fontSize: FONT.md, fontWeight: FONT.bold, marginBottom: SPACING.xs },
+    cardDesc: { fontSize: FONT.sm, lineHeight: 18, marginBottom: SPACING.sm },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap' },
     badge: {
-        backgroundColor: COLORS.surfaceLight, paddingHorizontal: SPACING.sm,
+        paddingHorizontal: SPACING.sm,
         paddingVertical: 3, borderRadius: RADIUS.sm, marginRight: SPACING.xs, marginBottom: SPACING.xs,
     },
-    badgeText: { color: COLORS.textSecondary, fontSize: FONT.xs, fontWeight: FONT.medium },
-    arrow: { color: COLORS.textSecondary, fontSize: 24, paddingLeft: SPACING.sm },
+    badgeText: { fontSize: FONT.xs, fontWeight: FONT.medium },
+    arrow: { fontSize: 24, paddingLeft: SPACING.sm },
 });

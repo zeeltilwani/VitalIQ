@@ -3,8 +3,9 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator,
 import { Picker } from '@react-native-picker/picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { COLORS, SPACING, RADIUS, FONT } from '../theme';
+import { SPACING, RADIUS, FONT } from '../theme';
 import api from '../api';
+import { useTheme } from '../context/ThemeContext';
 
 const SUGGESTIONS = {
     Breakfast: ['2 Roti + Sabzi', 'Oats with Milk', 'Idli chutney', 'Poha', 'Paratha', 'Dosa'],
@@ -22,8 +23,6 @@ const PORTIONS = [
     { label: 'Half Plate', value: 0.75 },
     { label: '2 Plates', value: 3 },
 ];
-
-import { useTheme } from '../context/ThemeContext';
 
 export default function AddFoodScreen({ route, navigation }) {
     const { user, prefill, mealType: initialMeal } = route.params || {};
@@ -47,7 +46,6 @@ export default function AddFoodScreen({ route, navigation }) {
 
         setIsSaving(true);
         try {
-            // Include portion multiplier in the food name so backend can compute correctly
             const portionLabel = PORTIONS.find(p => p.value === portion)?.label || '';
             const fullName = portion !== 1
                 ? `${foodName.trim()} (${portionLabel})`
@@ -59,15 +57,28 @@ export default function AddFoodScreen({ route, navigation }) {
                 portionMultiplier: portion,
             });
 
-            if (res.data.error) {
-                Alert.alert('Not Recognized', `VitalIQ couldn't estimate calories for "${foodName}". Please try a more common name.`);
+            if (!res || !res.data) {
+                Alert.alert('Error', 'No response from server. Please try again.');
                 return;
             }
+
+            const responseData = res.data;
+
+            if (!responseData.success && responseData.error) {
+                Alert.alert(
+                    'Food Not Recognized',
+                    `VitalIQ couldn't find "${foodName}" in its database.\n\nTry a simpler name like "rice", "chicken", or "apple".`
+                );
+                return;
+            }
+
+            const loggedItem = responseData.data || responseData;
+            const calText = loggedItem?.calories ? `${loggedItem.food_name || fullName} — ${loggedItem.calories} kcal` : fullName;
 
             Toast.show({
                 type: 'success',
                 text1: '✅ Logged Successfully',
-                text2: `${res.data.food_name} — ${res.data.calories} kcal`
+                text2: calText,
             });
 
             navigation.navigate('MainApp', {
@@ -75,8 +86,13 @@ export default function AddFoodScreen({ route, navigation }) {
                 params: { refresh: Date.now() }
             });
         } catch (err) {
-            Alert.alert('Error', 'Failed to save food log');
-            console.error(err);
+            const serverMsg = err?.response?.data?.error;
+            if (serverMsg) {
+                Alert.alert('Not Recognized', serverMsg);
+            } else {
+                Alert.alert('Error', 'Failed to save food log. Please check your connection.');
+            }
+            console.error('[AddFood]', err);
         } finally {
             setIsSaving(false);
         }
@@ -94,7 +110,6 @@ export default function AddFoodScreen({ route, navigation }) {
                 <Text style={[styles.title, { color: theme.text }]}>Track Nutrition</Text>
 
                 <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    {/* Meal Type Picker */}
                     <Text style={[styles.label, { color: theme.textSecondary }]}>Meal Type</Text>
                     <View style={[styles.pickerWrap, { backgroundColor: theme.bg, borderColor: theme.border }]}>
                         <Picker
@@ -103,14 +118,13 @@ export default function AddFoodScreen({ route, navigation }) {
                             style={{ color: theme.text }}
                             dropdownIconColor={theme.primary}
                         >
-                            <Picker.Item label="🍳 Breakfast" value="Breakfast" />
-                            <Picker.Item label="🍛 Lunch" value="Lunch" />
-                            <Picker.Item label="🍽️ Dinner" value="Dinner" />
-                            <Picker.Item label="🍪 Snacks" value="Snacks" />
+                            <Picker.Item label="🍳 Breakfast" value="Breakfast" color={theme.text} />
+                            <Picker.Item label="🍛 Lunch" value="Lunch" color={theme.text} />
+                            <Picker.Item label="🍽️ Dinner" value="Dinner" color={theme.text} />
+                            <Picker.Item label="🍪 Snacks" value="Snacks" color={theme.text} />
                         </Picker>
                     </View>
 
-                    {/* Food Name */}
                     <Text style={[styles.label, { color: theme.textSecondary }]}>Food Name</Text>
                     <TextInput
                         style={[styles.input, { backgroundColor: theme.bg, color: theme.text, borderColor: theme.border }]}
@@ -120,7 +134,6 @@ export default function AddFoodScreen({ route, navigation }) {
                         onChangeText={setFoodName}
                     />
 
-                    {/* Portion Selector */}
                     <Text style={[styles.label, { color: theme.textSecondary }]}>Portion Size</Text>
                     <View style={styles.portionRow}>
                         {PORTIONS.map((p, i) => (
@@ -144,7 +157,6 @@ export default function AddFoodScreen({ route, navigation }) {
                         ))}
                     </View>
 
-                    {/* Auto-calorie notice */}
                     <View style={[styles.autoBox, { backgroundColor: theme.isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderColor: theme.isDarkMode ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe' }]}>
                         <Text style={[styles.autoLabel, { color: theme.primary }]}>⏱️ Smart Calorie Engine</Text>
                         <Text style={[styles.autoText, { color: theme.textSecondary }]}>
@@ -157,7 +169,6 @@ export default function AddFoodScreen({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
 
-                {/* Quick suggestions */}
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Add — {mealType}</Text>
                 <View style={styles.suggestionRow}>
                     {SUGGESTIONS[mealType]?.map((s, i) => (
@@ -172,61 +183,52 @@ export default function AddFoodScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
+    container: { flex: 1 },
     header: { paddingHorizontal: 20, paddingVertical: 10 },
     backBtn: { padding: 5 },
-    backText: { color: COLORS.primary, fontSize: 16, fontWeight: 'bold' },
+    backText: { fontSize: 16, fontWeight: 'bold' },
     inner: { padding: 25 },
-    title: { fontSize: 32, fontWeight: '900', color: '#fff', marginBottom: 25 },
+    title: { fontSize: 32, fontWeight: '900', marginBottom: 25 },
     card: {
-        backgroundColor: COLORS.surface, padding: 25, borderRadius: 24,
-        borderWidth: 1, borderColor: COLORS.border,
+        padding: 25, borderRadius: 24,
+        borderWidth: 1,
     },
     label: {
-        color: COLORS.textSecondary, fontSize: 13, fontWeight: 'bold',
+        fontSize: 13, fontWeight: 'bold',
         textTransform: 'uppercase', marginBottom: 8, marginTop: 15,
     },
     pickerWrap: {
-        backgroundColor: COLORS.bg, borderRadius: 16,
-        borderWidth: 1, borderColor: COLORS.border, height: 60, justifyContent: 'center',
+        borderRadius: 16,
+        borderWidth: 1, height: 60, justifyContent: 'center',
     },
     input: {
-        backgroundColor: COLORS.bg, color: '#fff', padding: 18,
-        borderRadius: 16, fontSize: 16, borderWidth: 1, borderColor: COLORS.border,
+        padding: 18,
+        borderRadius: 16, fontSize: 16, borderWidth: 1,
     },
-
-    // Portion chips
     portionRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
     portionChip: {
-        backgroundColor: COLORS.bg, paddingVertical: 10, paddingHorizontal: 14,
+        paddingVertical: 10, paddingHorizontal: 14,
         borderRadius: 12, marginRight: 8, marginBottom: 8,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
     },
-    portionChipActive: {
-        backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary,
-    },
-    portionText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
-    portionTextActive: { color: COLORS.primary },
-
+    portionText: { fontSize: 13, fontWeight: '600' },
     autoBox: {
-        backgroundColor: COLORS.infoLight, padding: 15, borderRadius: 16,
-        marginTop: 20, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)',
+        padding: 15, borderRadius: 16,
+        marginTop: 20, borderWidth: 1,
     },
-    autoLabel: { color: COLORS.info, fontWeight: 'bold', fontSize: 14, marginBottom: 5 },
-    autoText: { color: COLORS.textSecondary, fontSize: 12, lineHeight: 18 },
-
+    autoLabel: { fontWeight: 'bold', fontSize: 14, marginBottom: 5 },
+    autoText: { fontSize: 12, lineHeight: 18 },
     btn: {
-        backgroundColor: COLORS.primary, padding: 18, borderRadius: 16,
+        padding: 18, borderRadius: 16,
         alignItems: 'center', marginTop: 25,
     },
     btnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-
-    sectionTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginTop: 35, marginBottom: 15 },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 35, marginBottom: 15 },
     suggestionRow: { flexDirection: 'row', flexWrap: 'wrap' },
     chip: {
-        backgroundColor: COLORS.surface, paddingVertical: 10, paddingHorizontal: 15,
+        paddingVertical: 10, paddingHorizontal: 15,
         borderRadius: 12, marginRight: 10, marginBottom: 10,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
     },
-    chipText: { color: COLORS.text, fontSize: 14 },
+    chipText: { fontSize: 14 },
 });

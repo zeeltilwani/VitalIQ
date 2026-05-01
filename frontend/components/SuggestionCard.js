@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, RADIUS, FONT } from '../theme';
+import { SPACING, RADIUS, FONT } from '../theme';
 import { MEAL_SUGGESTIONS } from '../data/exercises';
 import { useTheme } from '../context/ThemeContext';
 
@@ -13,7 +13,7 @@ export default function SuggestionCard({ consumed, goal }) {
         return (
             <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <Text style={[styles.title, { color: theme.text }]}>🍽️ Meal Suggestion</Text>
-                <View style={[styles.doneBox, { backgroundColor: theme.isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fee2e2' }]}>
+                <View style={[styles.doneBox, { backgroundColor: theme.isDarkMode ? 'rgba(239, 83, 80, 0.12)' : '#fee2e2' }]}>
                     <Text style={styles.doneIcon}>🛑</Text>
                     <Text style={[styles.doneText, { color: theme.danger }]}>
                         You've hit your calorie limit for today. Stay hydrated and opt for zero-calorie drinks if hungry.
@@ -36,7 +36,7 @@ export default function SuggestionCard({ consumed, goal }) {
         label = 'Full Meal';
     }
 
-    const suggestions = MEAL_SUGGESTIONS[category];
+    const suggestions = MEAL_SUGGESTIONS[category] || [];
 
     return (
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -63,12 +63,10 @@ export default function SuggestionCard({ consumed, goal }) {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: COLORS.surface,
         padding: SPACING.xl,
         borderRadius: RADIUS.xl,
         marginBottom: SPACING.lg,
         borderWidth: 1,
-        borderColor: COLORS.border,
     },
     headerRow: {
         flexDirection: 'row',
@@ -77,28 +75,23 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md,
     },
     title: {
-        color: COLORS.text,
         fontSize: FONT.lg,
         fontWeight: FONT.bold,
     },
     badge: {
-        backgroundColor: COLORS.primaryLight,
         paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.xs,
         borderRadius: RADIUS.pill,
     },
     badgeText: {
-        color: COLORS.primary,
         fontSize: FONT.xs,
         fontWeight: FONT.bold,
     },
     categoryLabel: {
-        color: COLORS.textSecondary,
         fontSize: FONT.sm,
         marginBottom: SPACING.lg,
     },
     categoryValue: {
-        color: COLORS.primary,
         fontWeight: FONT.bold,
     },
     suggestionRow: {
@@ -107,29 +100,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: SPACING.md,
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
     },
     suggestionName: {
-        color: COLORS.text,
         fontSize: FONT.md,
         flex: 1,
     },
     suggestionCal: {
-        color: COLORS.textSecondary,
         fontSize: FONT.sm,
         fontWeight: FONT.semibold,
     },
     doneBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.dangerLight,
         padding: SPACING.md,
         borderRadius: RADIUS.md,
         marginTop: SPACING.md,
     },
     doneIcon: { fontSize: 18, marginRight: SPACING.sm },
     doneText: {
-        color: COLORS.danger,
         fontSize: FONT.sm,
         flex: 1,
         lineHeight: 19,

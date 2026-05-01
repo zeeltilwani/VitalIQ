@@ -1,29 +1,32 @@
 // VitalIQ Design System - Centralized Theme
-// Professional dark UI with emerald accent
+// Green + Orange branding, Dark/Light adaptive
 
 export const COLORS = {
-    // Core palette
-    primary: '#10b981',       // Emerald green - primary accent
-    primaryDark: '#059669',   // Darker emerald for pressed states
-    primaryLight: 'rgba(16, 185, 129, 0.12)', // Subtle green tint for backgrounds
+    // Core brand palette
+    primary: '#4CAF50',          // VitalIQ Green
+    primaryDark: '#388E3C',      // Pressed/active green
+    primaryLight: 'rgba(76, 175, 80, 0.15)', // Subtle green tint
+    accent: '#FF9800',           // VitalIQ Orange
+    accentLight: 'rgba(255, 152, 0, 0.15)',  // Subtle orange tint
 
-    // Surfaces
-    bg: '#0f172a',            // Deep navy background
-    surface: '#1e293b',       // Card/surface background
-    surfaceLight: '#273548',  // Elevated surface (modals, sheets)
-    border: '#334155',        // Subtle borders
+    // Surfaces (Dark mode base)
+    bg: '#121212',           // Deep dark background
+    surface: '#1E1E1E',      // Card/surface background
+    surfaceLight: '#2A2A2A', // Elevated surface
+    border: '#333333',       // Subtle borders
 
     // Text
-    text: '#f1f5f9',          // Primary text (near white)
-    textSecondary: '#94a3b8', // Secondary/muted text
+    text: '#F5F5F5',          // Primary text
+    textSecondary: '#9E9E9E', // Muted text
     textInverse: '#ffffff',   // Text on colored backgrounds
 
     // Semantic
+    success: '#4CAF50',
     danger: '#ef4444',
     dangerLight: 'rgba(239, 68, 68, 0.12)',
-    warning: '#f59e0b',
-    info: '#3b82f6',
-    infoLight: 'rgba(59, 130, 246, 0.12)',
+    warning: '#FF9800',
+    info: '#42A5F5',
+    infoLight: 'rgba(66, 165, 245, 0.12)',
 };
 
 export const SPACING = {

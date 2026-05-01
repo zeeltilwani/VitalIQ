@@ -5,7 +5,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { COLORS } from './theme';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 // Screens
@@ -48,12 +47,12 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-                    <Text style={{ color: '#ef4444', fontSize: 24, fontWeight: 'bold', marginBottom: 15 }}>⚠️ App Error</Text>
-                    <Text style={{ color: '#f1f5f9', fontSize: 16, textAlign: 'center', marginBottom: 30 }}>
+                <View style={{ flex: 1, backgroundColor: '#0D1B2A', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+                    <Text style={{ color: '#EF5350', fontSize: 24, fontWeight: 'bold', marginBottom: 15 }}>⚠️ App Error</Text>
+                    <Text style={{ color: '#E8EDF2', fontSize: 16, textAlign: 'center', marginBottom: 30 }}>
                         Something went wrong. Please restart the app.
                     </Text>
-                    <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center' }}>
+                    <Text style={{ color: '#8899AA', fontSize: 12, textAlign: 'center' }}>
                         {this.state.error?.toString()}
                     </Text>
                 </View>

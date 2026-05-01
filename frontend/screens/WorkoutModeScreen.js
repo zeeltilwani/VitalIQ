@@ -1,296 +1,231 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Vibration, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { getExerciseAsset } from '../assets/exercises';
 
 export default function WorkoutModeScreen({ route, navigation }) {
-    const { bodyPart, exercises, user } = route.params || {};
+    const { exercises = [], user } = route.params || {};
     const insets = useSafeAreaInsets();
+    const { theme } = useTheme();
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentSet, setCurrentSet] = useState(1);
     const [isResting, setIsResting] = useState(false);
-    const [timer, setTimer] = useState(0);
-    const [isRunning, setIsRunning] = useState(false);
-    const [isComplete, setIsComplete] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [timerActive, setTimerActive] = useState(false);
 
-    const fadeAnim = useRef(new Animated.Value(1)).current;
-    const intervalRef = useRef(null);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const timerRef = useRef(null);
 
-    const exercise = exercises?.[currentIndex];
-    const totalExercises = exercises?.length || 0;
-    const progress = totalExercises > 0 ? ((currentIndex) / totalExercises) * 100 : 0;
+    const currentExercise = exercises[currentIndex];
+    
+    // ✅ TASK 2: TIMER SYSTEM (Exercise: 30s, Rest: 15s)
+    const EXERCISE_TIME = 30;
+    const REST_TIME = 15;
 
-    // Gender-based GIF Logic
-    const gender = user?.gender?.toLowerCase() === 'female' ? 'female' : 'male';
-    // Mapping for gender-based exercise GIFs
-    const getExerciseGif = (ex) => {
-        if (!ex?.gifName) return null;
-        // In a real app, these would be local assets or correctly structured CDN URLs
-        return `https://vitaliq.app/assets/exercises/${gender}/${ex.gifName}_${gender}.gif`;
-    };
-
-    const gifUrl = getExerciseGif(exercise);
+    // Pulse animation for active state
+    useEffect(() => {
+        if (!isResting) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 1.08, duration: 1000, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [isResting]);
 
     // Timer logic
     useEffect(() => {
-        if (isRunning && timer > 0) {
-            intervalRef.current = setTimeout(() => {
-                setTimer(prev => prev - 1);
+        if (timeLeft > 0 && timerActive) {
+            timerRef.current = setInterval(() => {
+                setTimeLeft(prev => prev - 1);
             }, 1000);
-        } else if (isRunning && timer === 0) {
-            Vibration.vibrate(200);
-            setIsRunning(false);
+        } else if (timeLeft === 0 && timerActive) {
+            setTimerActive(false);
             if (isResting) {
-                setIsResting(false);
-                handleNextSet();
-            }
-        }
-        return () => clearTimeout(intervalRef.current);
-    }, [isRunning, timer]);
-
-    const startExerciseTimer = () => {
-        if (exercise?.unit === 'sec') {
-            setTimer(exercise.reps);
-        } else {
-            setTimer(45); // Default work timer for rep-based
-        }
-        setIsRunning(true);
-    };
-
-    const startRest = () => {
-        setIsResting(true);
-        setTimer(exercise?.restSec || 30);
-        setIsRunning(true);
-    };
-
-    const handleNextSet = () => {
-        setIsRunning(false);
-        setIsResting(false);
-        setTimer(0);
-        
-        if (currentSet < exercise.sets) {
-            setCurrentSet(prev => prev + 1);
-        } else {
-            if (currentIndex + 1 < totalExercises) {
-                animateTransition(() => {
-                    setCurrentIndex(prev => prev + 1);
-                    setCurrentSet(1);
-                });
+                handleRestFinished();
             } else {
-                setIsComplete(true);
+                handleCompleteSet();
             }
         }
-    };
+        return () => clearInterval(timerRef.current);
+    }, [timeLeft, timerActive, isResting]);
 
-    const handleDoneSet = () => {
-        setIsRunning(false);
-        if (currentSet < exercise.sets) {
-            startRest();
-        } else {
-            handleNextSet();
+    // Start workout
+    useEffect(() => {
+        if (exercises.length > 0) {
+            startExercise();
         }
-    };
+    }, []);
 
-    const handleSkip = () => {
-        setIsRunning(false);
+    const startExercise = () => {
         setIsResting(false);
-        if (currentIndex + 1 < totalExercises) {
-            animateTransition(() => {
-                setCurrentIndex(prev => prev + 1);
-                setCurrentSet(1);
-            });
+        setTimeLeft(EXERCISE_TIME);
+        setTimerActive(true);
+    };
+
+    const handleCompleteSet = () => {
+        if (currentSet < currentExercise.sets) {
+            // Start Rest
+            setIsResting(true);
+            setTimeLeft(REST_TIME);
+            setTimerActive(true);
         } else {
-            setIsComplete(true);
+            // Move to next exercise
+            handleNextExercise();
         }
     };
 
-    const animateTransition = (callback) => {
-        Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
-            callback();
-            Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
-        });
+    const handleRestFinished = () => {
+        setIsResting(false);
+        setCurrentSet(prev => prev + 1);
+        setTimeLeft(EXERCISE_TIME);
+        setTimerActive(true);
     };
 
-    const formatTime = (s) => {
-        const mins = Math.floor(s / 60);
-        const secs = s % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const handleNextExercise = () => {
+        if (currentIndex < exercises.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            setCurrentSet(1);
+            setIsResting(false);
+            setTimeLeft(EXERCISE_TIME);
+            setTimerActive(true);
+        } else {
+            Alert.alert("Workout Finished! 🎉", "Great job! You've completed all exercises.", [
+                { text: "Finish", onPress: () => navigation.navigate('MainApp', { screen: 'Home', params: { user, refresh: true } }) }
+            ]);
+        }
     };
 
-    if (isComplete) {
-        return (
-            <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
-                <Text style={styles.doneEmoji}>🎉</Text>
-                <Text style={styles.doneTitle}>Workout Complete!</Text>
-                <Text style={styles.doneSubtitle}>
-                    {bodyPart?.emoji} {bodyPart?.label} — {totalExercises} exercises finished
-                </Text>
-                <TouchableOpacity
-                    style={[styles.primaryBtn, { backgroundColor: bodyPart?.color || COLORS.primary }]}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Text style={styles.primaryBtnText}>Back to Exercises</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.secondaryBtn}
-                    onPress={() => navigation.navigate('MainApp', { screen: 'Workout' })}
-                >
-                    <Text style={styles.secondaryBtnText}>Choose Another Workout</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
+    const skipRest = () => {
+        clearInterval(timerRef.current);
+        handleRestFinished();
+    };
 
-    if (!exercise) return null;
+    const skipExercise = () => {
+        clearInterval(timerRef.current);
+        handleNextExercise();
+    };
+
+    // Mapping key
+    const exerciseAsset = getExerciseAsset(currentExercise?.gifName);
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.backText}>✕ Quit</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+                    <Text style={[styles.backText, { color: theme.danger }]}>✕ Exit</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerProgress}>
-                    {currentIndex + 1}/{totalExercises}
-                </Text>
+                <View style={styles.progressHeader}>
+                    <Text style={[styles.progressText, { color: theme.textSecondary }]}>
+                        {currentIndex + 1} / {exercises.length} EXERCISES
+                    </Text>
+                    <View style={[styles.progressTrack, { backgroundColor: theme.surfaceLight }]}>
+                        <View style={[styles.progressFill, { width: `${((currentIndex + 1) / exercises.length) * 100}%`, backgroundColor: theme.primary }]} />
+                    </View>
+                </View>
+                <TouchableOpacity onPress={skipExercise} style={styles.headerBtn}>
+                    <Text style={[styles.skipText, { color: theme.textSecondary }]}>Skip Exercise ⏭</Text>
+                </TouchableOpacity>
             </View>
 
-            {/* Progress bar */}
-            <View style={styles.progressBg}>
-                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: bodyPart?.color || COLORS.primary }]} />
-            </View>
-
-            <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-                {/* Exercise Animation */}
-                <View style={styles.gifContainer}>
-                    {gifUrl ? (
-                        <Image source={{ uri: gifUrl }} style={styles.exerciseGif} resizeMode="contain" />
-                    ) : (
-                        <Text style={styles.exerciseEmoji}>{exercise.emoji}</Text>
-                    )}
-                </View>
-
-                {/* Exercise info */}
-                <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    <Text style={styles.exerciseDesc}>{exercise.description}</Text>
-                </View>
-
-                {/* Set indicator */}
-                <View style={styles.setRow}>
-                    {Array.from({ length: exercise.sets }, (_, i) => (
-                        <View
-                            key={i}
-                            style={[
-                                styles.setDot,
-                                i < currentSet - 1 && styles.setDotDone,
-                                i === currentSet - 1 && styles.setDotActive,
-                                { borderColor: bodyPart?.color || COLORS.primary },
-                                i === currentSet - 1 && { backgroundColor: bodyPart?.color || COLORS.primary },
-                            ]}
+            <View style={styles.content}>
+                {/* Visual Area (GIF Animation) */}
+                <View style={styles.visualContainer}>
+                    <Animated.View style={[
+                        styles.pulseCircle, 
+                        { 
+                            transform: [{ scale: pulseAnim }], 
+                            borderColor: isResting ? theme.accent : theme.primary,
+                            backgroundColor: theme.surface
+                        }
+                    ]}>
+                        <Image 
+                            source={exerciseAsset} 
+                            style={styles.exerciseImage} 
+                            resizeMode="contain"
                         />
-                    ))}
+                    </Animated.View>
+                    <View style={[styles.statusBadge, { backgroundColor: isResting ? theme.accent : theme.primary }]}>
+                        <Text style={styles.statusText}>{isResting ? 'RESTING' : 'ACTIVE'}</Text>
+                    </View>
                 </View>
-                <Text style={styles.setLabel}>
-                    Set {currentSet} of {exercise.sets} • {exercise.reps} {exercise.unit || 'reps'}
-                </Text>
 
-                {/* Timer / Status */}
-                <View style={styles.timerBox}>
-                    {isRunning ? (
-                        <>
-                            <Text style={styles.timerLabel}>{isResting ? '😮‍💨 Rest' : '🔥 Working'}</Text>
-                            <Text style={[styles.timerValue, { color: bodyPart?.color || COLORS.primary }]}>
-                                {formatTime(timer)}
-                            </Text>
-                        </>
-                    ) : (
-                        <Text style={styles.readyText}>
-                            {isResting ? '😮‍💨 Resting...' : '👊 Ready?'}
+                {/* Info Section */}
+                <View style={styles.infoSection}>
+                    <Text style={[styles.name, { color: theme.text }]}>{currentExercise?.name}</Text>
+                    <Text style={[styles.setInfo, { color: theme.textSecondary }]}>
+                        SET {currentSet} OF {currentExercise?.sets}
+                    </Text>
+                    
+                    {/* Timer */}
+                    <View style={styles.timerContainer}>
+                        <Text style={[styles.timerValue, { color: isResting ? theme.accent : theme.text }]}>
+                            {timeLeft}s
                         </Text>
+                        <Text style={[styles.timerLabel, { color: theme.textSecondary }]}>
+                            {isResting ? 'Remaining Rest' : 'Exercise Time'}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Footer Controls (Task 2 Buttons) */}
+                <View style={styles.footer}>
+                    {isResting ? (
+                        <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.accent }]} onPress={skipRest}>
+                            <Text style={styles.mainBtnText}>Skip Rest ⏭</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity 
+                            style={[styles.mainBtn, { backgroundColor: theme.primary }]} 
+                            onPress={handleCompleteSet}
+                        >
+                            <Text style={styles.mainBtnText}>Complete Set ✅</Text>
+                        </TouchableOpacity>
                     )}
                 </View>
-
-                {/* Controls */}
-                <View style={styles.controls}>
-                    {!isRunning && !isResting ? (
-                        <TouchableOpacity
-                            style={[styles.primaryBtn, { backgroundColor: bodyPart?.color || COLORS.primary }]}
-                            onPress={startExerciseTimer}
-                        >
-                            <Text style={styles.primaryBtnText}>▶ Start Set</Text>
-                        </TouchableOpacity>
-                    ) : isRunning && !isResting ? (
-                        <TouchableOpacity
-                            style={[styles.primaryBtn, { backgroundColor: COLORS.warning }]}
-                            onPress={handleDoneSet}
-                        >
-                            <Text style={styles.primaryBtnText}>✓ Complete Set {currentSet}</Text>
-                        </TouchableOpacity>
-                    ) : null}
-
-                    <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-                        <Text style={styles.skipBtnText}>Skip Exercise →</Text>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    centerContent: { justifyContent: 'center', alignItems: 'center', padding: SPACING.xxl },
-    header: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md,
+    container: { flex: 1 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
+    headerBtn: { padding: 4 },
+    backText: { fontWeight: 'bold' },
+    skipText: { fontSize: 12, fontWeight: 'bold' },
+    progressHeader: { flex: 1, alignItems: 'center', paddingHorizontal: SPACING.xl },
+    progressText: { fontSize: 10, fontWeight: 'bold', marginBottom: 4 },
+    progressTrack: { height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' },
+    progressFill: { height: '100%' },
+    
+    content: { flex: 1, paddingHorizontal: SPACING.xl, justifyContent: 'space-around', paddingBottom: 40 },
+    
+    visualContainer: { alignItems: 'center', marginTop: SPACING.md },
+    pulseCircle: {
+        width: 240, height: 240, borderRadius: 120,
+        borderWidth: 6, justifyContent: 'center', alignItems: 'center',
+        overflow: 'hidden', ...SHADOW.lg,
     },
-    backText: { color: COLORS.danger, fontSize: FONT.md, fontWeight: FONT.bold },
-    headerProgress: { color: COLORS.textSecondary, fontSize: FONT.md, fontWeight: FONT.semibold },
+    exerciseImage: { width: '80%', height: '80%' },
+    statusBadge: { position: 'absolute', bottom: -10, paddingHorizontal: 20, paddingVertical: 4, borderRadius: 12, ...SHADOW.sm },
+    statusText: { color: '#fff', fontSize: 12, fontWeight: '900' },
 
-    progressBg: { height: 4, backgroundColor: COLORS.surfaceLight, marginHorizontal: SPACING.xl },
-    progressFill: { height: '100%', borderRadius: 2 },
+    infoSection: { alignItems: 'center' },
+    name: { fontSize: 32, fontWeight: '900', textAlign: 'center' },
+    setInfo: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
+    timerContainer: { alignItems: 'center', marginTop: 20 },
+    timerValue: { fontSize: 70, fontWeight: '900' },
+    timerLabel: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
 
-    content: { flex: 1, paddingHorizontal: SPACING.xl, justifyContent: 'center' },
-
-    gifContainer: { height: 200, width: '100%', justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xl },
-    exerciseGif: { width: '100%', height: '100%' },
-    exerciseEmoji: { fontSize: 80 },
-
-    exerciseHeader: { alignItems: 'center', marginBottom: SPACING.lg },
-    exerciseName: { fontSize: FONT.title, fontWeight: FONT.black, color: COLORS.text, textAlign: 'center' },
-    exerciseDesc: { color: COLORS.textSecondary, fontSize: FONT.sm, textAlign: 'center', marginTop: SPACING.sm, lineHeight: 20, paddingHorizontal: SPACING.xl },
-
-    setRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: SPACING.sm },
-    setDot: {
-        width: 14, height: 14, borderRadius: 7, marginHorizontal: 4,
-        borderWidth: 2, borderColor: COLORS.border, backgroundColor: 'transparent',
-    },
-    setDotDone: { backgroundColor: COLORS.textSecondary, borderColor: COLORS.textSecondary },
-    setDotActive: {},
-    setLabel: { color: COLORS.textSecondary, fontSize: FONT.xs, textAlign: 'center', marginBottom: SPACING.xl },
-
-    timerBox: { alignItems: 'center', marginBottom: SPACING.xl },
-    timerLabel: { fontSize: FONT.lg, color: COLORS.textSecondary, marginBottom: SPACING.sm },
-    timerValue: { fontSize: 64, fontWeight: FONT.black },
-    readyText: { fontSize: FONT.xxl, color: COLORS.text, fontWeight: FONT.bold },
-
-    controls: { paddingBottom: SPACING.lg },
-    primaryBtn: {
-        padding: SPACING.lg, borderRadius: RADIUS.lg, alignItems: 'center',
-        marginBottom: SPACING.md, ...SHADOW.md,
-    },
-    primaryBtnText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
-    skipBtn: { alignItems: 'center', padding: SPACING.md },
-    skipBtnText: { color: COLORS.textSecondary, fontSize: FONT.md, fontWeight: FONT.semibold },
-    secondaryBtn: {
-        padding: SPACING.lg, borderRadius: RADIUS.lg, alignItems: 'center',
-        marginTop: SPACING.md, borderWidth: 1, borderColor: COLORS.border, width: '100%',
-    },
-    secondaryBtnText: { color: COLORS.textSecondary, fontSize: FONT.md, fontWeight: FONT.semibold },
-
-    doneEmoji: { fontSize: 80, marginBottom: SPACING.xl },
-    doneTitle: { fontSize: FONT.title, fontWeight: FONT.black, color: COLORS.text, marginBottom: SPACING.sm },
-    doneSubtitle: { color: COLORS.textSecondary, fontSize: FONT.md, marginBottom: SPACING.xxxl },
+    footer: { width: '100%' },
+    mainBtn: { paddingVertical: 18, borderRadius: RADIUS.xl, alignItems: 'center', ...SHADOW.md },
+    mainBtnText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
 });

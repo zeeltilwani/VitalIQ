@@ -3,10 +3,12 @@ import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
     ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import api from '../api';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ForgotPasswordScreen({ navigation }) {
+    const { theme } = useTheme();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
@@ -29,14 +31,14 @@ export default function ForgotPasswordScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
 
                     <View style={styles.header}>
                         <Text style={styles.icon}>🔐</Text>
-                        <Text style={styles.title}>Reset Password</Text>
-                        <Text style={styles.subtitle}>
+                        <Text style={[styles.title, { color: theme.text }]}>Reset Password</Text>
+                        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
                             {sent
                                 ? 'A temporary password has been sent to your email.'
                                 : 'Enter your email and we\'ll send you a temporary password.'}
@@ -44,38 +46,43 @@ export default function ForgotPasswordScreen({ navigation }) {
                     </View>
 
                     {!sent ? (
-                        <View style={styles.card}>
-                            <Text style={styles.inputLabel}>Email Address</Text>
+                        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Email Address</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, { backgroundColor: theme.bg, color: theme.text, borderColor: theme.border }]}
                                 placeholder="you@example.com"
-                                placeholderTextColor={COLORS.textSecondary}
+                                placeholderTextColor={theme.textSecondary}
                                 autoCapitalize="none"
                                 keyboardType="email-address"
                                 value={email}
                                 onChangeText={setEmail}
                             />
 
-                            <TouchableOpacity style={styles.btn} onPress={handleReset} disabled={loading} activeOpacity={0.8}>
+                            <TouchableOpacity 
+                                style={[styles.btn, { backgroundColor: theme.primary }]} 
+                                onPress={handleReset} 
+                                disabled={loading} 
+                                activeOpacity={0.8}
+                            >
                                 {loading ? (
-                                    <ActivityIndicator color={COLORS.textInverse} />
+                                    <ActivityIndicator color="#fff" />
                                 ) : (
                                     <Text style={styles.btnText}>Send Reset Email</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <View style={styles.successCard}>
+                        <View style={[styles.successCard, { backgroundColor: theme.primaryLight }]}>
                             <Text style={styles.successIcon}>✅</Text>
-                            <Text style={styles.successTitle}>Email Sent!</Text>
-                            <Text style={styles.successText}>
+                            <Text style={[styles.successTitle, { color: theme.primary }]}>Email Sent!</Text>
+                            <Text style={[styles.successText, { color: theme.text }]}>
                                 Check your inbox for a temporary password. Use it to log in, then change your password in Profile settings.
                             </Text>
                         </View>
                     )}
 
                     <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.backLink}>
-                        <Text style={styles.backLinkText}>← Back to Sign In</Text>
+                        <Text style={[styles.backLinkText, { color: theme.primary }]}>← Back to Sign In</Text>
                     </TouchableOpacity>
 
                 </ScrollView>
@@ -85,38 +92,38 @@ export default function ForgotPasswordScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
+    container: { flex: 1 },
     inner: { flexGrow: 1, justifyContent: 'center', padding: SPACING.xxl },
 
     header: { alignItems: 'center', marginBottom: SPACING.xxxl },
     icon: { fontSize: 48, marginBottom: SPACING.md },
-    title: { fontSize: FONT.xxl, fontWeight: FONT.black, color: COLORS.text },
-    subtitle: { fontSize: FONT.md, color: COLORS.textSecondary, textAlign: 'center', marginTop: SPACING.sm, paddingHorizontal: SPACING.xl },
+    title: { fontSize: FONT.xxl, fontWeight: FONT.black },
+    subtitle: { fontSize: FONT.md, textAlign: 'center', marginTop: SPACING.sm, paddingHorizontal: SPACING.xl },
 
     card: {
-        backgroundColor: COLORS.surface, padding: SPACING.xxl, borderRadius: RADIUS.xl,
-        borderWidth: 1, borderColor: COLORS.border, ...SHADOW.md,
+        padding: SPACING.xxl, borderRadius: RADIUS.xl,
+        borderWidth: 1, ...SHADOW.md,
     },
-    inputLabel: { color: COLORS.textSecondary, fontSize: FONT.sm, fontWeight: FONT.medium, marginBottom: SPACING.sm },
+    inputLabel: { fontSize: FONT.sm, fontWeight: FONT.medium, marginBottom: SPACING.sm },
     input: {
-        backgroundColor: COLORS.bg, color: COLORS.text, padding: SPACING.lg,
+        padding: SPACING.lg,
         borderRadius: RADIUS.md, marginBottom: SPACING.lg, fontSize: FONT.md,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
     },
     btn: {
-        backgroundColor: COLORS.primary, padding: SPACING.lg, borderRadius: RADIUS.md,
+        padding: SPACING.lg, borderRadius: RADIUS.md,
         alignItems: 'center', ...SHADOW.sm,
     },
-    btnText: { color: COLORS.textInverse, fontSize: FONT.lg, fontWeight: FONT.bold },
+    btnText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
 
     successCard: {
-        backgroundColor: COLORS.primaryLight, padding: SPACING.xxl,
+        padding: SPACING.xxl,
         borderRadius: RADIUS.xl, alignItems: 'center',
     },
     successIcon: { fontSize: 48, marginBottom: SPACING.md },
-    successTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, color: COLORS.primary, marginBottom: SPACING.sm },
-    successText: { color: COLORS.text, textAlign: 'center', fontSize: FONT.md, lineHeight: 22 },
+    successTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, marginBottom: SPACING.sm },
+    successText: { textAlign: 'center', fontSize: FONT.md, lineHeight: 22 },
 
     backLink: { alignItems: 'center', marginTop: SPACING.xxxl },
-    backLinkText: { color: COLORS.primary, fontSize: FONT.md, fontWeight: FONT.semibold },
+    backLinkText: { fontSize: FONT.md, fontWeight: FONT.semibold },
 });

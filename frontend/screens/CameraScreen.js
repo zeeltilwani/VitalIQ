@@ -1,28 +1,37 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Image, ScrollView, Platform } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import api from '../api';
 
 export default function CameraScreen({ route, navigation }) {
     const { user } = route.params || {};
     const insets = useSafeAreaInsets();
+    const { theme } = useTheme();
+    
+    const [permission, requestPermission] = useCameraPermissions();
+    const [cameraActive, setCameraActive] = useState(true);
     const [image, setImage] = useState(null);
     const [prediction, setPrediction] = useState(null);
     const [loading, setLoading] = useState(false);
+    const cameraRef = useRef(null);
 
-    const pickImage = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
-
-        if (!result.canceled) {
-            setImage(result.assets[0].uri);
-            identifyFood(result.assets[0].uri);
+    // ✅ TASK 6: Capture Photo Logic
+    const takePhoto = async () => {
+        if (!cameraRef.current) return;
+        try {
+            const photo = await cameraRef.current.takePictureAsync({
+                quality: 0.7,
+                base64: false,
+            });
+            setImage(photo.uri);
+            setCameraActive(false);
+            identifyFood(photo.uri);
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Camera Error", "Failed to capture photo.");
         }
     };
 
@@ -32,195 +41,130 @@ export default function CameraScreen({ route, navigation }) {
         try {
             const formData = new FormData();
             formData.append('image', {
-                uri,
-                name: 'food.jpg',
-                type: 'image/jpeg',
+                uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+                name: 'scan.jpg',
+                type: 'image/jpeg'
             });
 
             const response = await api.post('/ai/identify', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            setPrediction(response.data);
+
+            // ✅ TASK 3 Frontend Fix: Show errors correctly
+            if (response.data.success === false) {
+                Alert.alert("Scan Result", response.data.error || "Food not recognized");
+            } else {
+                setPrediction(response.data);
+            }
         } catch (error) {
-            Alert.alert('AI Error', 'Identification service is unavailable.');
+            console.error('[AI Error]', error);
+            Alert.alert('Analysis Failed', 'Could not reach the AI service. Please check your connection.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLogAll = () => {
-        if (!prediction?.items?.length) return;
-        // Log each item by navigating to food log with combined prefill
-        const combined = prediction.items.map(i => i.label).join(', ');
-        navigation.navigate('Log Food', { prefill: combined });
+    const resetCamera = () => {
+        setImage(null);
+        setPrediction(null);
+        setCameraActive(true);
     };
 
-    return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.backText}>← Back</Text>
+    const handleLog = () => {
+        if (!prediction) return;
+        navigation.navigate('Log Food', { prefill: prediction.label, user });
+    };
+
+    if (!permission) return <View />;
+    if (!permission.granted) {
+        return (
+            <View style={[styles.container, { backgroundColor: theme.bg, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: theme.text, textAlign: 'center', padding: 20 }}>Camera access is required for scanning food.</Text>
+                <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.primary, width: '60%' }]} onPress={requestPermission}>
+                    <Text style={styles.btnText}>Grant Permission</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>AI Scanner</Text>
-                <View style={{ width: 50 }} />
             </View>
+        );
+    }
 
-            <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-                <TouchableOpacity style={styles.scanBtn} onPress={pickImage} activeOpacity={0.8}>
-                    <Text style={styles.scanEmoji}>📸</Text>
-                    <Text style={styles.scanBtnText}>Capture or Upload Photo</Text>
-                    <Text style={styles.scanHint}>Take a photo of your plate for AI analysis</Text>
-                </TouchableOpacity>
-
-                {image && <Image source={{ uri: image }} style={styles.image} />}
-
-                {loading && (
-                    <View style={styles.loadingBox}>
-                        <ActivityIndicator size="large" color={COLORS.primary} />
-                        <Text style={styles.loadingText}>Analyzing your food...</Text>
-                    </View>
-                )}
-
-                {/* ─── Multi-Food Results ─── */}
-                {prediction && prediction.items && (
-                    <View style={styles.resultCard}>
-                        <View style={styles.resultHeader}>
-                            <Text style={styles.resultTitle}>🔍 AI Analysis</Text>
-                            <View style={styles.confBadge}>
-                                <Text style={styles.confText}>
-                                    {(prediction.confidence * 100).toFixed(0)}% avg
-                                </Text>
+    return (
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
+            {cameraActive ? (
+                <View style={{ flex: 1 }}>
+                    <CameraView style={{ flex: 1 }} ref={cameraRef}>
+                        <View style={styles.overlay}>
+                            <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
+                                <Text style={styles.closeText}>✕</Text>
+                            </TouchableOpacity>
+                            <View style={styles.bottomControls}>
+                                <TouchableOpacity style={styles.captureBtn} onPress={takePhoto}>
+                                    <View style={styles.captureInner} />
+                                </TouchableOpacity>
                             </View>
                         </View>
+                    </CameraView>
+                </View>
+            ) : (
+                <View style={[styles.container, { paddingTop: insets.top }]}>
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={resetCamera}>
+                            <Text style={[styles.backText, { color: theme.primary }]}>← Retake</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.title, { color: theme.text }]}>Scan Result</Text>
+                        <View style={{ width: 50 }} />
+                    </View>
 
-                        <Text style={styles.resultMsg}>{prediction.message}</Text>
+                    <ScrollView contentContainerStyle={styles.inner}>
+                        <Image source={{ uri: image }} style={styles.preview} />
 
-                        {/* Individual food items */}
-                        {prediction.items.map((item, i) => (
-                            <View key={i} style={styles.foodItemRow}>
-                                <View style={styles.foodItemLeft}>
-                                    <View style={styles.foodDot} />
-                                    <Text style={styles.foodItemName}>{item.label}</Text>
-                                </View>
-                                <View style={styles.foodItemRight}>
-                                    <Text style={styles.foodItemCal}>{item.calories}</Text>
-                                    <Text style={styles.foodItemUnit}>kcal</Text>
-                                </View>
+                        {loading && (
+                            <View style={styles.loadingBox}>
+                                <ActivityIndicator size="large" color={theme.primary} />
+                                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Analyzing your meal...</Text>
                             </View>
-                        ))}
+                        )}
 
-                        {/* Total */}
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalLabel}>Total Calories</Text>
-                            <Text style={styles.totalValue}>{prediction.totalCalories} kcal</Text>
-                        </View>
-
-                        {/* Log All Button */}
-                        <TouchableOpacity style={styles.logBtn} onPress={handleLogAll} activeOpacity={0.8}>
-                            <Text style={styles.logBtnText}>✅ Log All Items</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Fallback for legacy single-item format */}
-                {prediction && !prediction.items && prediction.label && (
-                    <View style={styles.resultCard}>
-                        <Text style={styles.resultTitle}>🔍 AI Analysis</Text>
-                        <Text style={styles.singleName}>{prediction.label}</Text>
-                        <Text style={styles.singleCal}>{prediction.calories} kcal</Text>
-                        <TouchableOpacity
-                            style={styles.logBtn}
-                            onPress={() => navigation.navigate('Log Food', { prefill: prediction.label })}
-                        >
-                            <Text style={styles.logBtnText}>Proceed to Log</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                <View style={{ height: 40 }} />
-            </ScrollView>
+                        {prediction && (
+                            <View style={[styles.resultCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                                <Text style={[styles.resLabel, { color: theme.textSecondary }]}>Detected Item</Text>
+                                <Text style={[styles.resName, { color: theme.text }]}>{prediction.label}</Text>
+                                <View style={[styles.resCalsBox, { backgroundColor: theme.primaryLight }]}>
+                                    <Text style={[styles.resCals, { color: theme.primary }]}>{prediction.calories} kcal</Text>
+                                </View>
+                                
+                                <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.primary }]} onPress={handleLog}>
+                                    <Text style={styles.btnText}>Log to Dairy</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </ScrollView>
+                </View>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    header: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border, backgroundColor: COLORS.surface,
-    },
-    backText: { color: COLORS.primary, fontSize: FONT.md, fontWeight: FONT.bold },
-    headerTitle: { fontSize: FONT.lg, fontWeight: FONT.bold, color: COLORS.text },
+    container: { flex: 1 },
+    overlay: { flex: 1, backgroundColor: 'transparent', justifyContent: 'space-between' },
+    closeBtn: { marginTop: 50, marginLeft: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    closeText: { color: '#fff', fontSize: 20 },
+    bottomControls: { marginBottom: 50, alignItems: 'center' },
+    captureBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
+    captureInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff' },
+
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg },
+    backText: { fontWeight: 'bold', fontSize: FONT.md },
+    title: { fontWeight: 'bold', fontSize: FONT.lg },
     inner: { padding: SPACING.xl, alignItems: 'center' },
-
-    scanBtn: {
-        backgroundColor: COLORS.surface, padding: SPACING.xxl, borderRadius: RADIUS.xl,
-        width: '100%', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border,
-        borderStyle: 'dashed',
-    },
-    scanEmoji: { fontSize: 40, marginBottom: SPACING.md },
-    scanBtnText: { color: COLORS.primary, fontSize: FONT.lg, fontWeight: FONT.bold },
-    scanHint: { color: COLORS.textSecondary, fontSize: FONT.sm, marginTop: SPACING.xs },
-
-    image: {
-        width: '100%', height: 280, borderRadius: RADIUS.xl, marginTop: SPACING.xl,
-        borderWidth: 3, borderColor: COLORS.surface,
-    },
-
-    loadingBox: { alignItems: 'center', marginTop: SPACING.xxl },
-    loadingText: { color: COLORS.textSecondary, fontSize: FONT.sm, marginTop: SPACING.md },
-
-    // Result card
-    resultCard: {
-        backgroundColor: COLORS.surface, width: '100%', padding: SPACING.xl,
-        borderRadius: RADIUS.xl, marginTop: SPACING.xl,
-        borderWidth: 1, borderColor: COLORS.border,
-    },
-    resultHeader: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: SPACING.sm,
-    },
-    resultTitle: { fontSize: FONT.lg, fontWeight: FONT.bold, color: COLORS.text },
-    confBadge: {
-        backgroundColor: COLORS.primaryLight, paddingHorizontal: SPACING.md,
-        paddingVertical: SPACING.xs, borderRadius: RADIUS.pill,
-    },
-    confText: { color: COLORS.primary, fontSize: FONT.xs, fontWeight: FONT.bold },
-    resultMsg: { color: COLORS.textSecondary, fontSize: FONT.sm, marginBottom: SPACING.lg },
-
-    // Food items
-    foodItemRow: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    },
-    foodItemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-    foodDot: {
-        width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary,
-        marginRight: SPACING.md,
-    },
-    foodItemName: { color: COLORS.text, fontSize: FONT.md, fontWeight: FONT.medium },
-    foodItemRight: { flexDirection: 'row', alignItems: 'baseline' },
-    foodItemCal: { color: COLORS.text, fontSize: FONT.lg, fontWeight: FONT.bold, marginRight: SPACING.xs },
-    foodItemUnit: { color: COLORS.textSecondary, fontSize: FONT.xs },
-
-    // Total
-    totalRow: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingTop: SPACING.lg, marginTop: SPACING.sm,
-    },
-    totalLabel: { color: COLORS.textSecondary, fontSize: FONT.md, fontWeight: FONT.semibold },
-    totalValue: { color: COLORS.primary, fontSize: FONT.xl, fontWeight: FONT.black },
-
-    // Log button
-    logBtn: {
-        backgroundColor: COLORS.primary, padding: SPACING.lg, borderRadius: RADIUS.lg,
-        width: '100%', alignItems: 'center', marginTop: SPACING.xl, ...SHADOW.sm,
-    },
-    logBtnText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
-
-    // Single-item fallback
-    singleName: { fontSize: FONT.xxl, fontWeight: FONT.black, color: COLORS.text, marginTop: SPACING.md },
-    singleCal: { fontSize: FONT.xl, color: COLORS.primary, fontWeight: FONT.bold, marginVertical: SPACING.sm },
+    preview: { width: '100%', height: 300, borderRadius: RADIUS.xl, marginBottom: SPACING.xl },
+    loadingBox: { padding: 40, alignItems: 'center' },
+    loadingText: { marginTop: 15, fontWeight: 'bold' },
+    resultCard: { width: '100%', padding: SPACING.xl, borderRadius: RADIUS.xl, borderWidth: 1, alignItems: 'center' },
+    resLabel: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 },
+    resName: { fontSize: 28, fontWeight: '900', marginBottom: 15 },
+    resCalsBox: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: RADIUS.pill, marginBottom: 25 },
+    resCals: { fontSize: 20, fontWeight: 'bold' },
+    mainBtn: { width: '100%', padding: 18, borderRadius: RADIUS.lg, alignItems: 'center' },
+    btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });

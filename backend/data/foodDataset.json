@@ -1,0 +1,15 @@
+{
+    "roti": 120, "chapati": 120, "paratha": 260, "naan": 260,
+    "puri": 150, "bhatura": 330, "kulcha": 290, "thepla": 180,
+    "rice": 200, "biryani": 400, "pulao": 300, "jeera rice": 220,
+    "fried rice": 350, "khichdi": 200, "upma": 190, "poha": 180,
+    "dal": 150, "sambar": 130, "rajma": 200, "chole": 210,
+    "aloo gobi": 180, "palak paneer": 280, "paneer butter masala": 350,
+    "shahi paneer": 330, "matar paneer": 280, "chicken": 250,
+    "chicken curry": 280, "butter chicken": 380, "egg": 78,
+    "idli": 60, "dosa": 170, "masala dosa": 250, "vada": 180,
+    "sandwich": 250, "burger": 350, "pizza": 280, "pasta": 350,
+    "apple": 95, "banana": 105, "mango": 100, "salad": 100,
+    "milk": 150, "curd": 100, "paneer": 265, "samosa": 260,
+    "pav bhaji": 380, "vada pav": 290, "chai": 40, "coffee": 50
+}

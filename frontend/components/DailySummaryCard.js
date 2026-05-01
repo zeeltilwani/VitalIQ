@@ -1,13 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, RADIUS, FONT } from '../theme';
 import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONT } from '../theme';
 
 export default function DailySummaryCard({ consumed, goal }) {
     const { theme } = useTheme();
-    const remaining = goal - consumed;
+    const remaining = (goal || 0) - (consumed || 0);
     const exceeded = remaining < 0;
-    const pct = Math.min((consumed / goal) * 100, 100);
+    const pct = Math.min(((consumed || 0) / (goal || 1)) * 100, 100);
+
+    const insightBg = exceeded
+        ? (theme.isDarkMode ? 'rgba(239,83,80,0.12)' : '#fee2e2')
+        : (theme.isDarkMode ? 'rgba(76,175,80,0.12)' : '#dcfce7');
 
     return (
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -15,17 +19,17 @@ export default function DailySummaryCard({ consumed, goal }) {
 
             <View style={styles.row}>
                 <View style={styles.metric}>
-                    <Text style={[styles.metricValue, { color: theme.text }]}>{consumed}</Text>
+                    <Text style={[styles.metricValue, { color: theme.text }]}>{consumed || 0}</Text>
                     <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Consumed</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: theme.border }]} />
                 <View style={styles.metric}>
-                    <Text style={[styles.metricValue, { color: theme.text }]}>{goal}</Text>
+                    <Text style={[styles.metricValue, { color: theme.text }]}>{goal || 0}</Text>
                     <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Goal</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: theme.border }]} />
                 <View style={styles.metric}>
-                    <Text style={[styles.metricValue, exceeded ? { color: theme.danger } : { color: theme.text }]}>
+                    <Text style={[styles.metricValue, { color: exceeded ? theme.danger : theme.text }]}>
                         {exceeded ? `+${Math.abs(remaining)}` : remaining}
                     </Text>
                     <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>{exceeded ? 'Over' : 'Left'}</Text>
@@ -41,13 +45,8 @@ export default function DailySummaryCard({ consumed, goal }) {
             </View>
 
             {/* Smart Insight */}
-            <View style={[
-                styles.insightBox, 
-                { backgroundColor: exceeded ? (theme.isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fee2e2') : (theme.isDarkMode ? 'rgba(16, 185, 129, 0.1)' : '#dcfce7') }
-            ]}>
-                <Text style={[styles.insightIcon]}>
-                    {exceeded ? '⚠️' : '✅'}
-                </Text>
+            <View style={[styles.insightBox, { backgroundColor: insightBg }]}>
+                <Text style={styles.insightIcon}>{exceeded ? '⚠️' : '✅'}</Text>
                 <Text style={[styles.insightText, { color: exceeded ? theme.danger : theme.success }]}>
                     {exceeded
                         ? `You exceeded your goal by ${Math.abs(remaining)} kcal. Try lighter meals tomorrow.`
@@ -63,19 +62,12 @@ export default function DailySummaryCard({ consumed, goal }) {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: COLORS.surface,
         padding: SPACING.xl,
         borderRadius: RADIUS.xl,
         marginBottom: SPACING.lg,
         borderWidth: 1,
-        borderColor: COLORS.border,
     },
-    title: {
-        color: COLORS.text,
-        fontSize: FONT.lg,
-        fontWeight: FONT.bold,
-        marginBottom: SPACING.lg,
-    },
+    title: { fontSize: FONT.lg, fontWeight: FONT.bold, marginBottom: SPACING.lg },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -83,47 +75,17 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.lg,
     },
     metric: { alignItems: 'center', flex: 1 },
-    metricValue: {
-        color: COLORS.text,
-        fontSize: FONT.xl,
-        fontWeight: FONT.black,
-    },
-    metricLabel: {
-        color: COLORS.textSecondary,
-        fontSize: FONT.xs,
-        marginTop: SPACING.xs,
-    },
-    exceeded: { color: COLORS.danger },
-    divider: { height: 28, width: 1, backgroundColor: COLORS.border },
+    metricValue: { fontSize: FONT.xl, fontWeight: FONT.black },
+    metricLabel: { fontSize: FONT.xs, marginTop: SPACING.xs },
+    divider: { height: 28, width: 1 },
 
-    barBg: {
-        height: 8,
-        backgroundColor: COLORS.surfaceLight,
-        borderRadius: 4,
-        overflow: 'hidden',
-        marginBottom: SPACING.lg,
-    },
-    barFill: {
-        height: '100%',
-        backgroundColor: COLORS.primary,
-        borderRadius: 4,
-    },
-    barExceeded: { backgroundColor: COLORS.danger },
+    barBg: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: SPACING.lg },
+    barFill: { height: '100%', borderRadius: 4 },
 
     insightBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: SPACING.md,
-        borderRadius: RADIUS.md,
+        flexDirection: 'row', alignItems: 'center',
+        padding: SPACING.md, borderRadius: RADIUS.md,
     },
-    insightGood: { backgroundColor: COLORS.primaryLight },
-    insightWarn: { backgroundColor: COLORS.dangerLight },
     insightIcon: { fontSize: 18, marginRight: SPACING.sm },
-    insightText: {
-        color: COLORS.primary,
-        fontSize: FONT.sm,
-        fontWeight: FONT.medium,
-        flex: 1,
-        lineHeight: 19,
-    },
+    insightText: { fontSize: FONT.sm, fontWeight: FONT.medium, flex: 1, lineHeight: 19 },
 });

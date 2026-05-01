@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api';
 
@@ -18,9 +18,9 @@ const calculateBMI = (weightKg, heightCm) => {
 
 const getBMICategory = (bmi, theme) => {
     if (!bmi) return { label: '—', color: theme.textSecondary };
-    if (bmi < 18.5) return { label: 'Underweight', color: '#f59e0b' };
+    if (bmi < 18.5) return { label: 'Underweight', color: theme.accent };
     if (bmi < 25) return { label: 'Normal', color: theme.primary };
-    if (bmi < 30) return { label: 'Overweight', color: '#f97316' };
+    if (bmi < 30) return { label: 'Overweight', color: theme.accent };
     return { label: 'Obese', color: theme.danger };
 };
 
@@ -158,8 +158,8 @@ export default function ProfileScreen({ navigation }) {
                         <Switch
                             value={isDarkMode}
                             onValueChange={toggleTheme}
-                            trackColor={{ false: '#cbd5e1', true: theme.primary }}
-                            thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
+                            trackColor={{ false: theme.border, true: theme.primary }}
+                            thumbColor="#fff"
                         />
                     </View>
                 </View>
@@ -209,9 +209,9 @@ export default function ProfileScreen({ navigation }) {
                         <View style={styles.bmiScaleBox}>
                             <Text style={[styles.bmiScaleLabel, { color: theme.textSecondary }]}>BMI Scale</Text>
                             <View style={styles.bmiScale}>
-                                <View style={[styles.bmiSegment, { flex: 18.5, backgroundColor: '#f59e0b' }]} />
+                                <View style={[styles.bmiSegment, { flex: 18.5, backgroundColor: theme.accent }]} />
                                 <View style={[styles.bmiSegment, { flex: 6.5, backgroundColor: theme.primary }]} />
-                                <View style={[styles.bmiSegment, { flex: 5, backgroundColor: '#f97316' }]} />
+                                <View style={[styles.bmiSegment, { flex: 5, backgroundColor: theme.warning }]} />
                                 <View style={[styles.bmiSegment, { flex: 10, backgroundColor: theme.danger }]} />
                             </View>
                             <View style={styles.bmiLabels}>
@@ -287,8 +287,8 @@ export default function ProfileScreen({ navigation }) {
                 </View>
 
                 {/* Logout */}
-                <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: theme.isDarkMode ? '#ef444420' : '#fee2e2', borderColor: '#ef444440' }]} onPress={handleLogout}>
-                    <Text style={[styles.logoutText, { color: '#ef4444' }]}>Sign Out</Text>
+                <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: theme.isDarkMode ? 'rgba(239, 83, 80, 0.12)' : '#fee2e2', borderColor: 'rgba(239, 83, 80, 0.25)' }]} onPress={handleLogout}>
+                    <Text style={[styles.logoutText, { color: theme.danger }]}>Sign Out</Text>
                 </TouchableOpacity>
 
                 <Text style={[styles.version, { color: theme.textSecondary }]}>VitalIQ v2.2.0</Text>
@@ -302,21 +302,17 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xxl },
     inner: { padding: SPACING.xxl },
-
     retryBtn: { paddingHorizontal: SPACING.xxl, paddingVertical: SPACING.md, borderRadius: RADIUS.md },
     retryText: { color: '#fff', fontWeight: FONT.bold, fontSize: FONT.md },
-
     header: { alignItems: 'center', marginBottom: SPACING.xxl },
     avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.md },
     avatarText: { fontSize: 32, fontWeight: FONT.bold, color: '#fff' },
     name: { fontSize: FONT.xxl, fontWeight: FONT.black },
     roleBadge: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: RADIUS.pill, marginTop: SPACING.sm },
     roleText: { fontWeight: FONT.bold, textTransform: 'uppercase', fontSize: FONT.xs },
-
     themeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     themeLabel: { fontSize: FONT.md, fontWeight: FONT.bold },
     themeDesc: { fontSize: FONT.xs, marginTop: 2 },
-
     analyticsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
     analyticsItem: { flex: 1, alignItems: 'center' },
     analyticsDivider: { height: 40, width: 1 },
@@ -325,27 +321,23 @@ const styles = StyleSheet.create({
     analyticsUnit: { fontSize: FONT.xs, marginTop: SPACING.xs },
     categoryBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: RADIUS.sm, marginTop: SPACING.xs },
     categoryText: { fontSize: FONT.xs, fontWeight: FONT.bold },
-
     bmiScaleBox: { marginTop: SPACING.sm },
     bmiScaleLabel: { fontSize: FONT.xs, marginBottom: SPACING.sm },
     bmiScale: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden' },
     bmiSegment: { height: '100%' },
     bmiLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xs },
     bmiLabelText: { fontSize: 10 },
-
     card: { width: '100%', padding: SPACING.xl, borderRadius: RADIUS.xl, marginBottom: SPACING.lg, borderWidth: 1 },
     cardTitle: { fontSize: FONT.sm, fontWeight: FONT.bold, marginBottom: SPACING.md, textTransform: 'uppercase', letterSpacing: 1 },
     row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SPACING.md, borderBottomWidth: 1 },
     rowLabel: { fontSize: FONT.md },
     rowValue: { fontSize: FONT.md, fontWeight: FONT.semibold },
-
     input: { padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.sm, borderWidth: 1 },
     pwActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: SPACING.sm },
     miniBtn: { paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm, borderRadius: RADIUS.sm, marginLeft: SPACING.sm },
     miniBtnText: { color: '#fff', fontWeight: FONT.bold },
     secondaryBtn: { padding: SPACING.md, borderRadius: RADIUS.md, alignItems: 'center' },
     secondaryBtnText: { fontWeight: FONT.bold },
-
     logoutBtn: { width: '100%', padding: SPACING.lg, borderRadius: RADIUS.lg, alignItems: 'center', marginTop: SPACING.sm, borderWidth: 1 },
     logoutText: { fontWeight: FONT.bold, fontSize: FONT.md },
     version: { textAlign: 'center', marginTop: SPACING.xl, fontSize: FONT.xs },
