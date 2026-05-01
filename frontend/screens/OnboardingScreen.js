@@ -1,23 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform, Animated, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
+import { COLORS, SPACING, RADIUS, FONT } from '../theme';
 import api from '../api';
 
 const SLIDES = 12;
-const COLORS = {
-    primary: '#10b981',
-    bg: '#0f172a',
-    card: '#1e293b',
-    text: '#f8fafc',
-    muted: '#94a3b8',
-    error: '#ef4444'
-};
 
 export default function OnboardingScreen({ route, navigation }) {
-    const { user } = route.params;
+    const { user } = route.params || {};
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -194,7 +186,7 @@ export default function OnboardingScreen({ route, navigation }) {
                         keyboardType="numeric" 
                         maxLength={6} 
                         placeholder="6-digit Pincode" 
-                        placeholderTextColor={COLORS.muted}
+                        placeholderTextColor={COLORS.textSecondary}
                         value={pincode}
                         onChangeText={setPincode}
                     />
@@ -208,8 +200,8 @@ export default function OnboardingScreen({ route, navigation }) {
                 <View style={styles.slide}>
                     <Text style={styles.qIcon}>⚖️</Text>
                     <Text style={styles.qTitle}>Physical Metrics</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={height} onChangeText={setHeight} placeholder="Height (cm)" placeholderTextColor={COLORS.muted} />
-                    <TextInput style={[styles.input, {marginTop: 15}]} keyboardType="numeric" value={weight} onChangeText={setWeight} placeholder="Weight (kg)" placeholderTextColor={COLORS.muted} />
+                    <TextInput style={styles.input} keyboardType="numeric" value={height} onChangeText={setHeight} placeholder="Height (cm)" placeholderTextColor={COLORS.textSecondary} />
+                    <TextInput style={[styles.input, {marginTop: 15}]} keyboardType="numeric" value={weight} onChangeText={setWeight} placeholder="Weight (kg)" placeholderTextColor={COLORS.textSecondary} />
                     {getError() && <Text style={styles.errorText}>{getError()}</Text>}
                 </View>
             );
@@ -228,7 +220,7 @@ export default function OnboardingScreen({ route, navigation }) {
                         value={targetWeight} 
                         onChangeText={setTargetWeight} 
                         placeholder={goal === 'Weight Loss' ? `Suggested: <${weight}` : `Suggested: >${weight}`} 
-                        placeholderTextColor={COLORS.muted} 
+                        placeholderTextColor={COLORS.textSecondary} 
                     />
                     {getError() && <Text style={styles.errorText}>{getError()}</Text>}
                 </View>
@@ -244,7 +236,7 @@ export default function OnboardingScreen({ route, navigation }) {
                 </View>
             );
 
-            case 11: return <View style={styles.slide}><Text style={styles.qIcon}>🩺</Text><Text style={styles.qTitle}>Medical Status</Text><TextInput style={styles.input} value={medical} onChangeText={setMedical} placeholder="Any conditions? (e.g. None)" placeholderTextColor={COLORS.muted} /></View>;
+            case 11: return <View style={styles.slide}><Text style={styles.qIcon}>🩺</Text><Text style={styles.qTitle}>Medical Status</Text><TextInput style={styles.input} value={medical} onChangeText={setMedical} placeholder="Any conditions? (e.g. None)" placeholderTextColor={COLORS.textSecondary} /></View>;
             case 12: return <View style={styles.slide}><Text style={styles.qIcon}>✅</Text><Text style={styles.qTitle}>Validation Success</Text><Text style={styles.desc}>We've verified all metrics. Ready to generate your health blueprint.</Text></View>;
             default: return null;
         }
@@ -252,7 +244,7 @@ export default function OnboardingScreen({ route, navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={[COLORS.bg, COLORS.card]} style={StyleSheet.absoluteFill} />
+            
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => step > 1 && setStep(step - 1)} style={{ opacity: step > 1 ? 1 : 0 }}><Text style={styles.headerText}>← Back</Text></TouchableOpacity>
@@ -282,23 +274,23 @@ export default function OnboardingScreen({ route, navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
     header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, paddingTop: 60, alignItems: 'center' },
-    headerText: { color: COLORS.muted, fontSize: 16, fontWeight: 'bold' },
+    headerText: { color: COLORS.textSecondary, fontSize: 16, fontWeight: 'bold' },
     progress: { color: COLORS.primary, fontWeight: '900', fontSize: 18 },
     scroll: { flexGrow: 1, justifyContent: 'center', padding: 25 },
     slide: { alignItems: 'center', width: '100%' },
     icon: { fontSize: 80, marginBottom: 30 },
     title: { fontSize: 32, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 15 },
-    desc: { fontSize: 18, color: COLORS.muted, textAlign: 'center', lineHeight: 26 },
+    desc: { fontSize: 18, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 26 },
     qIcon: { fontSize: 50, marginBottom: 20 },
     qTitle: { fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 15, textAlign: 'center' },
-    hint: { color: COLORS.muted, fontSize: 14, marginBottom: 15 },
+    hint: { color: COLORS.textSecondary, fontSize: 14, marginBottom: 15 },
     input: { backgroundColor: COLORS.bg, width: '100%', borderRadius: 16, padding: 20, color: '#fff', fontSize: 18, textAlign: 'center', borderWidth: 1, borderColor: '#334155' },
     inputText: { color: '#fff', fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
     locText: { color: COLORS.primary, fontSize: 18, fontWeight: 'bold', marginTop: 15 },
-    errorText: { color: COLORS.error, fontSize: 14, marginTop: 15, fontWeight: 'bold' },
-    selBtn: { width: '100%', backgroundColor: COLORS.card, borderRadius: 16, padding: 18, marginBottom: 15, alignItems: 'center', borderWidth: 1, borderColor: '#334155' },
+    errorText: { color: COLORS.danger, fontSize: 14, marginTop: 15, fontWeight: 'bold' },
+    selBtn: { width: '100%', backgroundColor: COLORS.surface, borderRadius: 16, padding: 18, marginBottom: 15, alignItems: 'center', borderWidth: 1, borderColor: '#334155' },
     selBtnActive: { borderColor: COLORS.primary, backgroundColor: 'rgba(16, 185, 129, 0.1)' },
-    selBtnText: { color: COLORS.muted, fontSize: 18, fontWeight: 'bold' },
+    selBtnText: { color: COLORS.textSecondary, fontSize: 18, fontWeight: 'bold' },
     footer: { padding: 25, paddingBottom: 50 },
     nextBtn: { backgroundColor: COLORS.primary, padding: 20, borderRadius: 16, alignItems: 'center' },
     nextText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }

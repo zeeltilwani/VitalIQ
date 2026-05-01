@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState, useRef } from 'react';
+import {
+    View, Text, TextInput, StyleSheet, FlatList,
+    ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, Platform, Alert
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORS, SPACING, RADIUS, FONT } from '../theme';
 import api from '../api';
 
-const COLORS = {
-    primary: '#10b981',
-    bg: '#0f172a',
-    card: '#1e293b',
-    text: '#f8fafc',
-    muted: '#94a3b8'
-};
-
-export default function ChatScreen() {
+export default function ChatScreen({ navigation }) {
+    const insets = useSafeAreaInsets();
+    const flatListRef = useRef(null);
     const [messages, setMessages] = useState([
         { role: 'bot', text: 'Hello! I am your VitalIQ health assistant. How can I help you today?' }
     ]);
@@ -20,7 +18,7 @@ export default function ChatScreen() {
 
     const sendMessage = async () => {
         if (!input.trim()) return;
-        const userMsg = { role: 'user', text: input };
+        const userMsg = { role: 'user', text: input.trim() };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
@@ -28,42 +26,58 @@ export default function ChatScreen() {
         try {
             const response = await api.post('/ai/chat', { message: userMsg.text });
             setMessages(prev => [...prev, { role: 'bot', text: response.data.reply }]);
-        } catch (error) {
-            setMessages(prev => [...prev, { role: 'bot', text: 'System offline. Try again later.' }]);
+        } catch (err) {
+            console.error('Chat error:', err);
+            Alert.alert("Assistant Error", "Unable to reach the AI assistant. Please try again.");
+            setMessages(prev => [...prev, { role: 'bot', text: 'I\'m having trouble connecting. Please try again.' }]);
         } finally {
             setLoading(false);
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
         }
     };
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={[COLORS.bg, COLORS.card]} style={StyleSheet.absoluteFill} />
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>AI Chatbot</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Text style={styles.backText}>← Back</Text>
+                </TouchableOpacity>
+                <Text style={styles.title}>AI Assistant</Text>
+                <View style={{ width: 50 }} />
             </View>
 
             <FlatList
+                ref={flatListRef}
                 data={messages}
                 keyExtractor={(_, index) => index.toString()}
-                contentContainerStyle={{ padding: 20 }}
+                contentContainerStyle={{ padding: SPACING.xl }}
+                showsVerticalScrollIndicator={false}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                 renderItem={({ item }) => (
                     <View style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.botBubble]}>
-                        <Text style={styles.msgText}>{item.text}</Text>
+                        <Text style={[styles.msgText, item.role === 'user' && { color: COLORS.textInverse }]}>{item.text}</Text>
                     </View>
                 )}
             />
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={100}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
                 <View style={styles.inputArea}>
                     <TextInput
                         style={styles.input}
                         value={input}
                         onChangeText={setInput}
                         placeholder="Ask anything..."
-                        placeholderTextColor={COLORS.muted}
+                        placeholderTextColor={COLORS.textSecondary}
+                        returnKeyType="send"
+                        onSubmitEditing={sendMessage}
                     />
-                    <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendIcon}>🚀</Text>}
+                    <TouchableOpacity
+                        style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
+                        onPress={sendMessage}
+                        disabled={loading || !input.trim()}
+                    >
+                        {loading ? <ActivityIndicator color={COLORS.textInverse} size="small" /> : <Text style={styles.sendIcon}>➤</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -73,14 +87,32 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
-    header: { padding: 25, paddingTop: 60, backgroundColor: COLORS.bg },
-    title: { fontSize: 32, fontWeight: '900', color: '#fff' },
-    bubble: { padding: 15, borderRadius: 20, marginBottom: 12, maxWidth: '85%' },
-    userBubble: { backgroundColor: COLORS.primary, alignSelf: 'flex-end', borderBottomRightRadius: 4 },
-    botBubble: { backgroundColor: COLORS.card, alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
-    msgText: { color: '#fff', fontSize: 16, lineHeight: 22 },
-    inputArea: { flexDirection: 'row', padding: 15, backgroundColor: COLORS.card, borderTopWidth: 1, borderTopColor: '#334155', alignItems: 'center' },
-    input: { flex: 1, backgroundColor: COLORS.bg, color: '#fff', borderRadius: 25, paddingHorizontal: 20, height: 50, fontSize: 16 },
-    sendBtn: { marginLeft: 12, backgroundColor: COLORS.primary, width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-    sendIcon: { fontSize: 20 }
+    header: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        padding: SPACING.lg, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        backgroundColor: COLORS.surface,
+    },
+    backText: { color: COLORS.primary, fontSize: FONT.md, fontWeight: FONT.bold },
+    title: { fontSize: FONT.lg, fontWeight: FONT.bold, color: COLORS.text },
+
+    bubble: { padding: SPACING.md, paddingHorizontal: SPACING.lg, borderRadius: RADIUS.lg, marginBottom: SPACING.sm, maxWidth: '82%' },
+    userBubble: { backgroundColor: COLORS.primary, alignSelf: 'flex-end', borderBottomRightRadius: RADIUS.sm },
+    botBubble: { backgroundColor: COLORS.surface, alignSelf: 'flex-start', borderBottomLeftRadius: RADIUS.sm },
+    msgText: { color: COLORS.text, fontSize: FONT.md, lineHeight: 22 },
+
+    inputArea: {
+        flexDirection: 'row', padding: SPACING.md, backgroundColor: COLORS.surface,
+        borderTopWidth: 1, borderTopColor: COLORS.border, alignItems: 'center',
+    },
+    input: {
+        flex: 1, backgroundColor: COLORS.bg, color: COLORS.text,
+        borderRadius: RADIUS.pill, paddingHorizontal: SPACING.xl, height: 44, fontSize: FONT.md,
+        borderWidth: 1, borderColor: COLORS.border,
+    },
+    sendBtn: {
+        marginLeft: SPACING.sm, backgroundColor: COLORS.primary,
+        width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center',
+    },
+    sendBtnDisabled: { backgroundColor: COLORS.surfaceLight },
+    sendIcon: { fontSize: 18, color: COLORS.textInverse },
 });

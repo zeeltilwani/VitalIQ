@@ -24,18 +24,24 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: 'All fields are required.' });
         }
 
-        const userCheck = await db.query('SELECT * FROM users WHERE email = $1', [email.trim().toLowerCase()]);
+        const normalizedEmail = email.trim().toLowerCase();
+        const userCheck = await db.query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
         if (userCheck.rows.length > 0) {
             return res.status(400).json({ error: 'Email already registered.' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        console.log(`[Signup] Executing INSERT for user: ${email.trim().toLowerCase()}`);
+        const hashedPassword = await bcrypt.hash(password, 12); // Increased rounds for security
+        console.log(`[Signup] Executing INSERT for user: ${normalizedEmail}`);
         const newUser = await db.query(
             'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
-            [name, email.trim().toLowerCase(), hashedPassword]
+            [name, normalizedEmail, hashedPassword]
         );
-        console.log(`[Signup] User inserted successfully during signup: ${newUser.rows[0].email}`);
+
+        if (!newUser || newUser.rows.length === 0) {
+            throw new Error('User insertion failed and returned no rows.');
+        }
+
+        console.log(`[Signup] User inserted successfully: ${newUser.rows[0].email}`);
 
         const token = jwt.sign(
             { id: newUser.rows[0].id, email: newUser.rows[0].email },
@@ -45,8 +51,8 @@ router.post('/signup', async (req, res) => {
 
         res.status(201).json({ user: newUser.rows[0], token });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Signup failed.' });
+        console.error('[Signup] Error:', err);
+        res.status(500).json({ error: 'Signup failed. Please try again later.' });
     }
 });
 
@@ -54,22 +60,27 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log(`[Login] email input: ${email}`);
         const normalizedEmail = email.trim().toLowerCase();
+        console.log(`\n[Login] Attempt for email: '${normalizedEmail}'`);
 
         const result = await db.query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
         console.log(`[Login] DB result row count: ${result.rows.length}`);
+
         if (result.rows.length === 0) {
-            return res.status(400).json({ error: 'User not found.' });
+            console.log(`[Login] Failure: User not found.`);
+            return res.status(400).json({ error: 'Invalid credentials.' }); // Generic message for security
         }
 
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password_hash);
-        console.log(`[Login] password match result: ${validPassword}`);
+        console.log(`[Login] bcrypt.compare match result: ${validPassword}`);
+
         if (!validPassword) {
+            console.log(`[Login] Failure: Password mismatch.`);
             return res.status(400).json({ error: 'Invalid credentials.' });
         }
 
+        console.log(`[Login] Success: User ${normalizedEmail} authenticated.`);
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET,
@@ -87,8 +98,8 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Login failed.' });
+        console.error('[Login] Error:', err);
+        res.status(500).json({ error: 'Login failed. Please try again later.' });
     }
 });
 

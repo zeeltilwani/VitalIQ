@@ -16,6 +16,18 @@ app.use(cors({
     allowedHeaders: ['Authorization', 'Content-Type']
 }));
 app.use(express.json());
+app.use('/diet-pdfs', express.static('assets/diet-plans'));
+
+// Global request logger — fires on EVERY request
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} from ${req.ip}`);
+    next();
+});
+
+// Health-check route — use this to test connectivity from phone
+app.get('/test', (req, res) => {
+    res.json({ status: 'ok', time: new Date().toISOString(), message: 'VitalIQ backend is reachable' });
+});
 
 const apiLogger = (req, res, next) => {
     console.log(`[${new Date().toISOString()}] Incoming request: ${req.method} ${req.originalUrl}`);

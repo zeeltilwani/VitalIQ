@@ -1,36 +1,49 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// API Base URL - Updated to current local IP
-export const API_URL = "http://192.168.1.9:5000/api";
-console.log("API URL:", API_URL);
+// ─── API BASE URL ───
+// IMPORTANT: This MUST match your laptop's WiFi IP.
+// Run `ipconfig` in terminal → look for "Wireless LAN adapter Wi-Fi" → IPv4 Address
+// Current WiFi IP: 192.168.1.11
+export const API_URL = "http://192.168.1.11:5000/api";
+
+console.log("╔══════════════════════════════════════╗");
+console.log("║ VitalIQ API:", API_URL);
+console.log("╚══════════════════════════════════════╝");
 
 const api = axios.create({
     baseURL: API_URL,
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    timeout: 15000,
+    headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach JWT token to every request
 api.interceptors.request.use(
     async (config) => {
         const token = await AsyncStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+        if (token) config.headers.Authorization = `Bearer ${token}`;
+        console.log(`→ [API] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
     },
     (error) => Promise.reject(error)
 );
 
+// Response error handler
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log(`← [API] ${response.status} ${response.config.url}`);
+        return response;
+    },
     (error) => {
-        console.error('❌ [API Error]', error.response?.data || error.message);
         if (!error.response) {
-            return Promise.reject(new Error("Backend not reachable"));
+            console.error('❌ [NETWORK] Backend not reachable at', API_URL);
+            return Promise.reject(new Error(
+                'Server not reachable. Check that backend is running and phone is on same WiFi.'
+            ));
         }
+        const status = error.response.status;
+        const data = error.response.data;
+        console.error(`❌ [API ${status}]`, data?.error || data?.message || error.message);
         return Promise.reject(error);
     }
 );

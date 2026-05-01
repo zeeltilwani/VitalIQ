@@ -19,12 +19,16 @@ const normalizeMeal = (meal) => {
 // --- Log Food ---
 router.post('/food', async (req, res) => {
     try {
-        const { userId, foodName, mealType = 'Snacks', imageUrl } = req.body;
+        const { userId, foodName, mealType = 'Snacks', imageUrl, portionMultiplier } = req.body;
         const finalUserId = userId || req.user.id;
 
         if (!foodName) return res.status(400).json({ error: 'Food name is required' });
 
-        const calories = estimateCalories(foodName);
+        let calories = estimateCalories(foodName);
+        // Apply portion multiplier from frontend dropdown (if provided)
+        if (portionMultiplier && portionMultiplier !== 1) {
+            calories = Math.round(calories * portionMultiplier);
+        }
         const date = new Date().toISOString().split('T')[0];
         const standardizedMeal = normalizeMeal(mealType);
 
@@ -34,16 +38,23 @@ router.post('/food', async (req, res) => {
         );
 
         // Update streak
-        await db.query(`
+        // If last_logged_date was yesterday → current_streak + 1
+        // If last_logged_date is today → no change
+        // Else → 1
+        const streakUpdate = await db.query(`
             UPDATE users SET 
-            last_logged_date = CURRENT_DATE,
             current_streak = CASE 
+                WHEN last_logged_date IS NULL THEN 1
                 WHEN last_logged_date = CURRENT_DATE - INTERVAL '1 day' THEN current_streak + 1
                 WHEN last_logged_date = CURRENT_DATE THEN current_streak
                 ELSE 1
-            END
+            END,
+            last_logged_date = CURRENT_DATE
             WHERE id = $1
+            RETURNING current_streak
         `, [finalUserId]);
+        
+        console.log(`🔥 Streak Updated for user ${finalUserId}: ${streakUpdate.rows[0].current_streak}`);
 
         res.status(201).json(newLog.rows[0]);
     } catch (err) {

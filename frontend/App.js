@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StatusBar } from 'react-native';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import { COLORS } from './theme';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 // Screens
 import LoginScreen from './screens/LoginScreen';
@@ -18,109 +20,176 @@ import AddFoodScreen from './screens/AddFoodScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import DietPlansScreen from './screens/DietPlansScreen';
 import DietPlanDetailScreen from './screens/DietPlanDetailScreen';
-import ProgressScreen from './screens/ProgressScreen';
+import AnalyticsScreen from './screens/AnalyticsScreen';
+
+// Workout module (merged — single tab)
+import WorkoutScreen from './screens/WorkoutScreen';
+import ExerciseListScreen from './screens/ExerciseListScreen';
+import WorkoutModeScreen from './screens/WorkoutModeScreen';
+
+// Global Components
+import FloatingAI from './components/FloatingAI';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Theme Constants
-const COLORS = {
-    primary: '#10b981',
-    background: '#0f172a',
-    card: '#1e293b',
-    text: '#f8fafc',
-    muted: '#94a3b8'
-};
-
-const CustomDarkTheme = {
-    ...DarkTheme,
-    colors: {
-        ...DarkTheme.colors,
-        primary: COLORS.primary,
-        background: COLORS.background,
-        card: COLORS.card,
-        text: COLORS.text,
-        border: '#334155'
+// ─── Error Boundary ───
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
     }
-};
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+    componentDidCatch(error, info) {
+        console.error('App Error Boundary caught:', error, info);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+                    <Text style={{ color: '#ef4444', fontSize: 24, fontWeight: 'bold', marginBottom: 15 }}>⚠️ App Error</Text>
+                    <Text style={{ color: '#f1f5f9', fontSize: 16, textAlign: 'center', marginBottom: 30 }}>
+                        Something went wrong. Please restart the app.
+                    </Text>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center' }}>
+                        {this.state.error?.toString()}
+                    </Text>
+                </View>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+function TabIcon({ name, focused, theme }) {
+    let icon = '';
+    if (name === 'Home') icon = '🏠';
+    else if (name === 'Diet Plans') icon = '🥗';
+    else if (name === 'Workout') icon = '🏋️';
+    else if (name === 'Profile') icon = '👤';
+    return (
+        <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.7, color: focused ? theme.primary : theme.textSecondary }}>
+            {icon}
+        </Text>
+    );
+}
 
 function MainAppTabs({ route }) {
     const { user } = route.params || {};
     const insets = useSafeAreaInsets();
-    
+    const { theme } = useTheme();
+
     return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarActiveTintColor: COLORS.primary,
-                tabBarInactiveTintColor: COLORS.muted,
-                tabBarStyle: {
-                    position: 'absolute',
-                    bottom: insets.bottom > 0 ? insets.bottom : 15,
-                    left: 20,
-                    right: 20,
-                    borderRadius: 25,
-                    height: 70,
-                    backgroundColor: COLORS.card,
-                    borderTopWidth: 0,
-                    paddingBottom: 10,
-                    paddingTop: 10,
-                    elevation: 10,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.3,
-                    shadowRadius: 10,
-                    shadowOffset: { width: 0, height: 5 }
-                },
-                tabBarLabelStyle: { fontSize: 11, fontWeight: '700', paddingBottom: 5 },
-                tabBarIcon: ({ color, focused }) => {
-                    let icon = '';
-                    if (route.name === 'Home') icon = focused ? '🏠' : '🏚️';
-                    else if (route.name === 'Diet Plans') icon = focused ? '🥗' : '🍲';
-                    else if (route.name === 'Progress') icon = focused ? '📈' : '📊';
-                    else if (route.name === 'Profile') icon = focused ? '👤' : '👥';
-                    return <Text style={{ color, fontSize: 24 }}>{icon}</Text>;
-                }
-            })}
-        >
-            <Tab.Screen name="Home" component={Dashboard} initialParams={{ user }} />
-            <Tab.Screen name="Diet Plans" component={DietPlansScreen} initialParams={{ user }} />
-            <Tab.Screen name="Progress" component={ProgressScreen} initialParams={{ user }} />
-            <Tab.Screen name="Profile" component={ProfileScreen} initialParams={{ user }} />
-        </Tab.Navigator>
+        <View style={{ flex: 1, backgroundColor: theme.bg }}>
+            <Tab.Navigator
+                screenOptions={({ route: tabRoute }) => ({
+                    headerShown: false,
+                    tabBarActiveTintColor: theme.primary,
+                    tabBarInactiveTintColor: theme.textSecondary,
+                    tabBarStyle: {
+                        position: 'absolute',
+                        bottom: insets.bottom > 0 ? insets.bottom : 12,
+                        left: 12,
+                        right: 12,
+                        borderRadius: 20,
+                        height: 64,
+                        backgroundColor: theme.surface,
+                        borderTopWidth: 0,
+                        paddingBottom: 8,
+                        paddingTop: 8,
+                        elevation: 10,
+                        shadowColor: '#000',
+                        shadowOpacity: 0.25,
+                        shadowRadius: 10,
+                        shadowOffset: { width: 0, height: 4 },
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                    },
+                    tabBarLabelStyle: {
+                        fontSize: 10,
+                        fontWeight: '600',
+                        paddingBottom: 4,
+                    },
+                    tabBarIcon: ({ focused }) => (
+                        <TabIcon name={tabRoute.name} focused={focused} theme={theme} />
+                    ),
+                })}
+            >
+                <Tab.Screen name="Home" component={Dashboard} initialParams={{ user }} />
+                <Tab.Screen name="Diet Plans" component={DietPlansScreen} initialParams={{ user }} />
+                <Tab.Screen name="Workout" component={WorkoutScreen} initialParams={{ user }} />
+                <Tab.Screen name="Profile" component={ProfileScreen} initialParams={{ user }} />
+            </Tab.Navigator>
+
+            {/* Global Floating AI Chatbot */}
+            <FloatingAI />
+        </View>
+    );
+}
+
+function AppContent() {
+    const { isDarkMode, theme } = useTheme();
+
+    const NavigationTheme = isDarkMode ? DarkTheme : DefaultTheme;
+    const CustomTheme = {
+        ...NavigationTheme,
+        colors: {
+            ...NavigationTheme.colors,
+            primary: theme.primary,
+            background: theme.bg,
+            card: theme.surface,
+            text: theme.text,
+            border: theme.border,
+        },
+    };
+
+    return (
+        <View style={{ flex: 1, backgroundColor: theme.bg }}>
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.bg} />
+            <NavigationContainer theme={CustomTheme}>
+                <Stack.Navigator
+                    initialRouteName="Login"
+                    screenOptions={{
+                        headerShown: false,
+                        cardStyle: { backgroundColor: theme.bg },
+                    }}
+                >
+                    {/* Auth Stack */}
+                    <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="Signup" component={SignupScreen} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+
+                    {/* Main Tabs */}
+                    <Stack.Screen name="MainApp" component={MainAppTabs} />
+
+                    {/* Modals / Subscreens */}
+                    <Stack.Screen name="Log Food" component={AddFoodScreen} />
+                    <Stack.Screen name="Scan Food" component={CameraScreen} />
+                    <Stack.Screen name="Ask AI" component={ChatScreen} />
+                    <Stack.Screen name="DietPlanDetail" component={DietPlanDetailScreen} />
+                    <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+
+                    {/* Workout Flow */}
+                    <Stack.Screen name="ExerciseList" component={ExerciseListScreen} />
+                    <Stack.Screen name="WorkoutMode" component={WorkoutModeScreen} />
+                </Stack.Navigator>
+            </NavigationContainer>
+            <Toast />
+        </View>
     );
 }
 
 export default function App() {
     return (
-        <SafeAreaProvider>
-            <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-                <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-                <NavigationContainer theme={CustomDarkTheme}>
-                    <Stack.Navigator 
-                        initialRouteName="Login" 
-                        screenOptions={{ 
-                            headerShown: false,
-                            cardStyle: { backgroundColor: COLORS.background }
-                        }}
-                    >
-                        {/* Auth Stack */}
-                        <Stack.Screen name="Login" component={LoginScreen} />
-                        <Stack.Screen name="Signup" component={SignupScreen} />
-                        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-                        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-                        
-                        {/* Main Tabs */}
-                        <Stack.Screen name="MainApp" component={MainAppTabs} />
-
-                        {/* Modals / Subscreens */}
-                        <Stack.Screen name="Log Food" component={AddFoodScreen} />
-                        <Stack.Screen name="Scan Food" component={CameraScreen} />
-                        <Stack.Screen name="Ask AI" component={ChatScreen} />
-                        <Stack.Screen name="DietPlanDetail" component={DietPlanDetailScreen} />
-                    </Stack.Navigator>
-                </NavigationContainer>
-                <Toast />
-            </View>
-        </SafeAreaProvider>
+        <ErrorBoundary>
+            <SafeAreaProvider>
+                <ThemeProvider>
+                    <AppContent />
+                </ThemeProvider>
+            </SafeAreaProvider>
+        </ErrorBoundary>
     );
 }
