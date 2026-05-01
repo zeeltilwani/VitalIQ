@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { SPACING, RADIUS, FONT } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import api from '../api';
 import { useTheme } from '../context/ThemeContext';
+import BackButton from '../components/BackButton';
+import PressableButton from '../components/PressableButton';
 
 const SUGGESTIONS = {
     Breakfast: ['2 Roti + Sabzi', 'Oats with Milk', 'Idli chutney', 'Poha', 'Paratha', 'Dosa'],
@@ -62,23 +64,10 @@ export default function AddFoodScreen({ route, navigation }) {
                 return;
             }
 
-            const responseData = res.data;
-
-            if (!responseData.success && responseData.error) {
-                Alert.alert(
-                    'Food Not Recognized',
-                    `VitalIQ couldn't find "${foodName}" in its database.\n\nTry a simpler name like "rice", "chicken", or "apple".`
-                );
-                return;
-            }
-
-            const loggedItem = responseData.data || responseData;
-            const calText = loggedItem?.calories ? `${loggedItem.food_name || fullName} — ${loggedItem.calories} kcal` : fullName;
-
             Toast.show({
                 type: 'success',
                 text1: '✅ Logged Successfully',
-                text2: calText,
+                text2: `${fullName} has been added to your ${mealType.toLowerCase()}.`,
             });
 
             navigation.navigate('MainApp', {
@@ -87,148 +76,155 @@ export default function AddFoodScreen({ route, navigation }) {
             });
         } catch (err) {
             const serverMsg = err?.response?.data?.error;
-            if (serverMsg) {
-                Alert.alert('Not Recognized', serverMsg);
-            } else {
-                Alert.alert('Error', 'Failed to save food log. Please check your connection.');
-            }
-            console.error('[AddFood]', err);
+            Alert.alert('Not Recognized', serverMsg || 'Failed to save food log.');
         } finally {
             setIsSaving(false);
         }
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Text style={[styles.backText, { color: theme.primary }]}>← Back</Text>
-                </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+        >
+            <View style={[styles.container, { backgroundColor: theme.bg }]}>
+                {/* Header */}
+                <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
+                    <BackButton onPress={() => navigation.goBack()} />
+                    <Text style={[styles.headerLabel, { color: theme.textSecondary }]}>Add Nutrition</Text>
+                    <View style={{ width: 44 }} />
+                </View>
 
-            <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-                <Text style={[styles.title, { color: theme.text }]}>Track Nutrition</Text>
+                <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+                    <Text style={[styles.title, { color: theme.text }]}>What's on your plate?</Text>
+                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Log your meal to track calories & macros</Text>
 
-                <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>Meal Type</Text>
-                    <View style={[styles.pickerWrap, { backgroundColor: theme.bg, borderColor: theme.border }]}>
-                        <Picker
-                            selectedValue={mealType}
-                            onValueChange={(v) => setMealType(v)}
-                            style={{ color: theme.text }}
-                            dropdownIconColor={theme.primary}
-                        >
-                            <Picker.Item label="🍳 Breakfast" value="Breakfast" color={theme.text} />
-                            <Picker.Item label="🍛 Lunch" value="Lunch" color={theme.text} />
-                            <Picker.Item label="🍽️ Dinner" value="Dinner" color={theme.text} />
-                            <Picker.Item label="🍪 Snacks" value="Snacks" color={theme.text} />
-                        </Picker>
+                    <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Meal Type</Text>
+                        <View style={[styles.pickerWrap, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]}>
+                            <Picker
+                                selectedValue={mealType}
+                                onValueChange={(v) => setMealType(v)}
+                                style={{ color: theme.text }}
+                                dropdownIconColor={theme.primary}
+                            >
+                                <Picker.Item label="🍳 Breakfast" value="Breakfast" color={theme.text} />
+                                <Picker.Item label="🍛 Lunch" value="Lunch" color={theme.text} />
+                                <Picker.Item label="🍽️ Dinner" value="Dinner" color={theme.text} />
+                                <Picker.Item label="🍪 Snacks" value="Snacks" color={theme.text} />
+                            </Picker>
+                        </View>
+
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Food Item</Text>
+                        <TextInput
+                            style={[styles.input, { backgroundColor: theme.surfaceLight, color: theme.text, borderColor: theme.border }]}
+                            placeholder="e.g. Chicken Biryani"
+                            placeholderTextColor={theme.textSecondary}
+                            value={foodName}
+                            onChangeText={setFoodName}
+                        />
+
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Portion Selection</Text>
+                        <View style={styles.portionRow}>
+                            {PORTIONS.map((p, i) => (
+                                <TouchableOpacity
+                                    key={i}
+                                    style={[
+                                        styles.portionChip,
+                                        { backgroundColor: theme.surfaceLight, borderColor: theme.border },
+                                        portion === p.value && { backgroundColor: theme.primary, borderColor: theme.primary },
+                                    ]}
+                                    onPress={() => setPortion(p.value)}
+                                >
+                                    <Text style={[
+                                        styles.portionText,
+                                        { color: theme.textSecondary },
+                                        portion === p.value && { color: '#FFFFFF' },
+                                    ]}>
+                                        {p.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <PressableButton 
+                            label={isSaving ? "Saving..." : `Log ${mealType}`}
+                            variant="primary"
+                            onPress={handleLog}
+                            disabled={isSaving}
+                            loading={isSaving}
+                            style={{ marginTop: SPACING.xl }}
+                            size="lg"
+                        />
                     </View>
 
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>Food Name</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: theme.bg, color: theme.text, borderColor: theme.border }]}
-                        placeholder="e.g. Paneer Butter Masala"
-                        placeholderTextColor={theme.textSecondary}
-                        value={foodName}
-                        onChangeText={setFoodName}
-                    />
-
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>Portion Size</Text>
-                    <View style={styles.portionRow}>
-                        {PORTIONS.map((p, i) => (
-                            <TouchableOpacity
-                                key={i}
-                                style={[
-                                    styles.portionChip,
-                                    { backgroundColor: theme.bg, borderColor: theme.border },
-                                    portion === p.value && { backgroundColor: theme.primaryLight, borderColor: theme.primary },
-                                ]}
-                                onPress={() => setPortion(p.value)}
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Popular for {mealType}</Text>
+                    <View style={styles.suggestionRow}>
+                        {SUGGESTIONS[mealType]?.map((s, i) => (
+                            <TouchableOpacity 
+                                key={i} 
+                                style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]} 
+                                onPress={() => setFoodName(s)}
                             >
-                                <Text style={[
-                                    styles.portionText,
-                                    { color: theme.textSecondary },
-                                    portion === p.value && { color: theme.primary },
-                                ]}>
-                                    {p.label}
-                                </Text>
+                                <Text style={[styles.chipText, { color: theme.text }]}>{s}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
 
-                    <View style={[styles.autoBox, { backgroundColor: theme.isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderColor: theme.isDarkMode ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe' }]}>
-                        <Text style={[styles.autoLabel, { color: theme.primary }]}>⏱️ Smart Calorie Engine</Text>
-                        <Text style={[styles.autoText, { color: theme.textSecondary }]}>
-                            VitalIQ auto-estimates calories from 120+ foods × your portion size. No manual lookup needed.
-                        </Text>
-                    </View>
-
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={handleLog} disabled={isSaving}>
-                        {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Log {mealType}</Text>}
-                    </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Add — {mealType}</Text>
-                <View style={styles.suggestionRow}>
-                    {SUGGESTIONS[mealType]?.map((s, i) => (
-                        <TouchableOpacity key={i} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => setFoodName(s)}>
-                            <Text style={[styles.chipText, { color: theme.text }]}>{s}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </ScrollView>
-        </View>
+                    <View style={{ height: 100 }} />
+                </ScrollView>
+            </View>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { paddingHorizontal: 20, paddingVertical: 10 },
-    backBtn: { padding: 5 },
-    backText: { fontSize: 16, fontWeight: 'bold' },
-    inner: { padding: 25 },
-    title: { fontSize: 32, fontWeight: '900', marginBottom: 25 },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.xl,
+        paddingBottom: SPACING.md,
+    },
+    headerLabel: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
+    inner: { padding: SPACING.xl },
+    title: { fontSize: 28, fontWeight: '900', marginBottom: 4 },
+    subtitle: { fontSize: 14, fontWeight: '500', marginBottom: SPACING.xxl },
+    
     card: {
-        padding: 25, borderRadius: 24,
+        padding: SPACING.xl, 
+        borderRadius: RADIUS.xxl,
         borderWidth: 1,
+        ...SHADOW.md,
     },
     label: {
-        fontSize: 13, fontWeight: 'bold',
-        textTransform: 'uppercase', marginBottom: 8, marginTop: 15,
+        fontSize: 11, fontWeight: '900',
+        textTransform: 'uppercase', marginBottom: 8, marginTop: SPACING.lg,
+        letterSpacing: 1,
     },
     pickerWrap: {
-        borderRadius: 16,
-        borderWidth: 1, height: 60, justifyContent: 'center',
+        borderRadius: RADIUS.lg,
+        borderWidth: 1, height: 56, justifyContent: 'center',
     },
     input: {
-        padding: 18,
-        borderRadius: 16, fontSize: 16, borderWidth: 1,
+        padding: 16,
+        borderRadius: RADIUS.lg, fontSize: 16, borderWidth: 1,
+        fontWeight: '500',
     },
-    portionRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
+    portionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     portionChip: {
-        paddingVertical: 10, paddingHorizontal: 14,
-        borderRadius: 12, marginRight: 8, marginBottom: 8,
-        borderWidth: 1,
+        paddingVertical: 10, paddingHorizontal: 16,
+        borderRadius: RADIUS.pill, borderWidth: 1,
     },
-    portionText: { fontSize: 13, fontWeight: '600' },
-    autoBox: {
-        padding: 15, borderRadius: 16,
-        marginTop: 20, borderWidth: 1,
-    },
-    autoLabel: { fontWeight: 'bold', fontSize: 14, marginBottom: 5 },
-    autoText: { fontSize: 12, lineHeight: 18 },
-    btn: {
-        padding: 18, borderRadius: 16,
-        alignItems: 'center', marginTop: 25,
-    },
-    btnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 35, marginBottom: 15 },
-    suggestionRow: { flexDirection: 'row', flexWrap: 'wrap' },
+    portionText: { fontSize: 12, fontWeight: 'bold' },
+
+    sectionTitle: { fontSize: 18, fontWeight: '900', marginTop: SPACING.xxl, marginBottom: SPACING.lg },
+    suggestionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     chip: {
-        paddingVertical: 10, paddingHorizontal: 15,
-        borderRadius: 12, marginRight: 10, marginBottom: 10,
-        borderWidth: 1,
+        paddingVertical: 10, paddingHorizontal: 16,
+        borderRadius: RADIUS.lg, borderWidth: 1,
+        ...SHADOW.xs,
     },
-    chipText: { fontSize: 14 },
+    chipText: { fontSize: 14, fontWeight: '600' },
 });

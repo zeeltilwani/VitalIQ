@@ -1,25 +1,92 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Share, Alert, Image, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import BackButton from '../components/BackButton';
+import PressableButton from '../components/PressableButton';
 
 export default function DietPlanDetailScreen({ route, navigation }) {
     const { plan } = route.params || {};
     const insets = useSafeAreaInsets();
     const { theme } = useTheme();
 
-    // Null-guard: prevent crash if plan is missing
-    if (!plan) {
-        return (
-            <View style={{ flex: 1, backgroundColor: theme.bg, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: theme.danger, fontSize: 40, marginBottom: 16 }}>⚠️</Text>
-                <Text style={{ color: theme.text, fontSize: 16 }}>No plan data available.</Text>
-            </View>
-        );
-    }
+    if (!plan) return null;
+
+    const generatePlanHTML = () => {
+        const mealRows = (plan.meals || []).map(m => `
+            <div class="meal-card">
+                <div class="meal-header">
+                    <span class="meal-name">${m.meal}</span>
+                    <span class="meal-cal">${m.calories} kcal</span>
+                </div>
+                <ul class="meal-items">
+                    ${(m.items || []).map(item => `<li>${item}</li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
+
+        const tipRows = (plan.tips || []).map(tip => `<li>${tip}</li>`).join('');
+
+        return `
+            <html>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+                    <style>
+                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1a1a1a; line-height: 1.6; }
+                        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #22C55E; padding-bottom: 20px; }
+                        .app-name { color: #22C55E; font-weight: 900; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+                        h1 { margin: 0; font-size: 32px; font-weight: 900; color: #000; }
+                        .plan-desc { color: #666; font-size: 16px; margin-top: 10px; }
+                        .meta { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+                        .meta-item { background: #f0fdf4; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+                        
+                        h2 { font-size: 20px; font-weight: 800; margin-top: 40px; margin-bottom: 20px; border-left: 4px solid #22C55E; padding-left: 15px; }
+                        
+                        .meal-card { background: #fafafa; border: 1px solid #eee; border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+                        .meal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+                        .meal-name { font-weight: 800; font-size: 18px; }
+                        .meal-cal { color: #22C55E; font-weight: 700; }
+                        .meal-items { margin: 0; padding-left: 20px; color: #444; }
+                        .meal-items li { margin-bottom: 5px; }
+                        
+                        .tips-section { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 20px; margin-top: 20px; }
+                        .tips-section ul { margin: 0; padding-left: 20px; }
+                        .tips-section li { margin-bottom: 8px; font-weight: 500; color: #92400e; }
+                        
+                        .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="app-name">VitalIQ Health System</div>
+                        <h1>${plan.title}</h1>
+                        <p class="plan-desc">${plan.desc}</p>
+                        <div class="meta">
+                            <div class="meta-item">🗓️ ${plan.duration}</div>
+                            <div class="meta-item">🔥 ${plan.totalCalories} kcal/day</div>
+                        </div>
+                    </div>
+
+                    <h2>Daily Nutrition Protocol</h2>
+                    ${mealRows}
+
+                    <h2>Expert Guidelines</h2>
+                    <div class="tips-section">
+                        <ul>${tipRows}</ul>
+                    </div>
+
+                    <div class="footer">
+                        Generated by VitalIQ Health Monitoring & Optimization System<br/>
+                        &copy; 2026 VitalIQ Team. All rights reserved.
+                    </div>
+                </body>
+            </html>
+        `;
+    };
 
     const generatePlanText = () => {
         let text = `=== ${plan.title} ===\n${plan.desc}\n\n`;
@@ -30,69 +97,47 @@ export default function DietPlanDetailScreen({ route, navigation }) {
             (m.items || []).forEach(item => { text += `  • ${item}\n`; });
             text += `\n`;
         });
-        text += `--- TIPS & GUIDELINES ---\n`;
-        (plan.tips || []).forEach(tip => { text += `• ${tip}\n`; });
         text += `\n--- Generated by VitalIQ ---\n`;
         return text;
     };
 
     const handleShare = async () => {
         try {
-            let text = `📋 ${plan.title}\n${plan.desc}\n\n`;
-            text += `🗓️ Duration: ${plan.duration}\n🔥 Daily Calories: ${plan.totalCalories} kcal\n\n`;
-            text += `--- MEAL PLAN ---\n\n`;
-            (plan.meals || []).forEach(m => {
-                text += `🍽️ ${m.meal} (${m.calories} kcal)\n`;
-                (m.items || []).forEach(item => { text += `  • ${item}\n`; });
-                text += `\n`;
-            });
-            text += `--- TIPS ---\n`;
-            (plan.tips || []).forEach(tip => { text += `💡 ${tip}\n`; });
-            text += `\nShared from VitalIQ 🍃`;
+            const text = generatePlanText();
             await Share.share({ message: text, title: plan.title });
         } catch (error) {
             Alert.alert('Error', 'Could not share diet plan.');
         }
     };
 
-    // ✅ FIXED: Local text-file export — no server needed, works on real device
     const handleDownload = async () => {
         try {
+            const html = generatePlanHTML();
+            const { uri } = await Print.printToFileAsync({ html });
+            
             const safeName = (plan.title || 'diet').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            const fileUri = `${FileSystem.documentDirectory}${safeName}_plan.txt`;
-            const content = generatePlanText();
-
-            await FileSystem.writeAsStringAsync(fileUri, content, {
-                encoding: FileSystem.EncodingType.UTF8,
+            const pdfName = `${FileSystem.cacheDirectory}${safeName}_plan.pdf`;
+            
+            await FileSystem.moveAsync({
+                from: uri,
+                to: pdfName,
             });
 
-            Alert.alert('Downloaded successfully', `Plan saved to device storage:\n${fileUri}`);
-
-            const isAvailable = await Sharing.isAvailableAsync();
-            if (isAvailable) {
-                await Sharing.shareAsync(fileUri, {
-                    mimeType: 'text/plain',
-                    dialogTitle: `Save ${plan.title}`,
-                    UTI: 'public.plain-text',
-                });
-            } else {
-                Alert.alert('Saved!', `Plan saved to:\n${fileUri}`);
-            }
+            await Sharing.shareAsync(pdfName, { UTI: '.pdf', mimeType: 'application/pdf' });
         } catch (error) {
-            console.error('[Diet Download]', error);
-            Alert.alert('Error', 'Could not save the diet plan. Please try sharing instead.');
+            console.error('[PDF Error]', error);
+            Alert.alert('Error', 'Could not generate the PDF diet plan.');
         }
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: theme.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Text style={[styles.backText, { color: theme.primary }]}>← Back</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleShare}>
-                    <Text style={[styles.shareText, { color: theme.textSecondary }]}>Share 📤</Text>
+            <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
+                <BackButton onPress={() => navigation.goBack()} />
+                <Text style={[styles.headerTitle, { color: theme.textSecondary }]}>Plan Details</Text>
+                <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
+                    <Text style={{ fontSize: 20 }}>📤</Text>
                 </TouchableOpacity>
             </View>
 
@@ -107,19 +152,16 @@ export default function DietPlanDetailScreen({ route, navigation }) {
 
                     <View style={styles.metaRow}>
                         <View style={[styles.metaChip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>📅 {plan.duration}</Text>
+                            <Text style={[styles.metaLabel, { color: theme.text }]}>🗓️ {plan.duration}</Text>
                         </View>
                         <View style={[styles.metaChip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>🔥 {plan.totalCalories} kcal/day</Text>
-                        </View>
-                        <View style={[styles.metaChip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>📂 {plan.category}</Text>
+                            <Text style={[styles.metaLabel, { color: theme.primary }]}>🔥 {plan.totalCalories} kcal/day</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Meals */}
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Daily Meal Plan</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Daily Meal Protocol</Text>
                 {(plan.meals || []).map((meal, index) => (
                     <View key={index} style={[styles.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                         <View style={[styles.mealHeader, { borderBottomColor: theme.border }]}>
@@ -128,7 +170,7 @@ export default function DietPlanDetailScreen({ route, navigation }) {
                         </View>
                         {(meal.items || []).map((item, i) => (
                             <View key={i} style={styles.mealItemRow}>
-                                <Text style={[styles.bullet, { color: theme.textSecondary }]}>•</Text>
+                                <View style={[styles.dot, { backgroundColor: theme.primary }]} />
                                 <Text style={[styles.mealItem, { color: theme.textSecondary }]}>{item}</Text>
                             </View>
                         ))}
@@ -136,8 +178,8 @@ export default function DietPlanDetailScreen({ route, navigation }) {
                 ))}
 
                 {/* Tips */}
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Tips & Guidelines</Text>
-                <View style={[styles.tipsCard, { backgroundColor: theme.primaryLight }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Expert Guidelines</Text>
+                <View style={[styles.tipsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     {(plan.tips || []).map((tip, i) => (
                         <View key={i} style={styles.tipRow}>
                             <Text style={styles.tipIcon}>💡</Text>
@@ -146,42 +188,26 @@ export default function DietPlanDetailScreen({ route, navigation }) {
                     ))}
                 </View>
 
-                {/* Summary */}
-                <View style={[styles.summaryCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <Text style={[styles.summaryTitle, { color: theme.primary }]}>Daily Nutrition Summary</Text>
-                    <View style={[styles.summaryRow, { borderBottomColor: theme.border }]}>
-                        <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Calories</Text>
-                        <Text style={[styles.summaryValue, { color: theme.text }]}>{plan.totalCalories} kcal</Text>
-                    </View>
-                    <View style={[styles.summaryRow, { borderBottomColor: theme.border }]}>
-                        <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Meals per Day</Text>
-                        <Text style={[styles.summaryValue, { color: theme.text }]}>{(plan.meals || []).length}</Text>
-                    </View>
-                    <View style={[styles.summaryRow, { borderBottomColor: theme.border }]}>
-                        <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Plan Duration</Text>
-                        <Text style={[styles.summaryValue, { color: theme.text }]}>{plan.duration}</Text>
-                    </View>
-                </View>
-
-                {/* Action buttons */}
-                <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: theme.primary }]}
-                    onPress={handleDownload}
-                >
-                    <Text style={styles.actionBtnIcon}>📥</Text>
-                    <Text style={[styles.actionBtnText, { color: '#fff' }]}>Download Plan (.txt)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionBtn, styles.secondaryBtn, { borderColor: theme.primary }]}
-                    onPress={handleShare}
-                >
-                    <Text style={styles.actionBtnIcon}>📤</Text>
-                    <Text style={[styles.actionBtnText, { color: theme.primary }]}>Share This Plan</Text>
-                </TouchableOpacity>
-
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Footer Actions */}
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+                <PressableButton 
+                    variant="secondary" 
+                    label="Share" 
+                    icon="📤"
+                    onPress={handleShare}
+                    style={{ flex: 1, marginRight: SPACING.md }}
+                />
+                <PressableButton 
+                    variant="primary" 
+                    label="Download" 
+                    icon="📥"
+                    onPress={handleDownload}
+                    style={{ flex: 1.5 }}
+                />
+            </View>
         </View>
     );
 }
@@ -189,74 +215,57 @@ export default function DietPlanDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     header: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md,
-        borderBottomWidth: 1,
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        paddingHorizontal: SPACING.xl,
+        paddingBottom: SPACING.md,
     },
-    backBtn: { padding: SPACING.xs },
-    backText: { fontSize: FONT.md, fontWeight: FONT.bold },
-    shareText: { fontSize: FONT.sm, fontWeight: FONT.medium },
-    inner: { padding: SPACING.xl },
+    headerTitle: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
+    shareBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    inner: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg },
 
     titleSection: { alignItems: 'center', marginBottom: SPACING.xxl },
     iconBox: {
         width: 80, height: 80,
-        borderRadius: RADIUS.xl, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg,
+        borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg,
     },
     icon: { fontSize: 40 },
-    title: { fontSize: FONT.xxl, fontWeight: FONT.black, textAlign: 'center', marginBottom: SPACING.sm },
-    desc: { fontSize: FONT.md, textAlign: 'center', paddingHorizontal: SPACING.xl, lineHeight: 22 },
-    metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: SPACING.lg },
+    title: { fontSize: 28, fontWeight: '900', textAlign: 'center', marginBottom: 8 },
+    desc: { fontSize: 15, textAlign: 'center', paddingHorizontal: SPACING.lg, lineHeight: 22 },
+    metaRow: { flexDirection: 'row', justifyContent: 'center', marginTop: SPACING.lg, gap: SPACING.md },
     metaChip: {
-        paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-        borderRadius: RADIUS.pill, marginHorizontal: SPACING.xs, marginBottom: SPACING.xs,
-        borderWidth: 1,
+        paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: RADIUS.pill, borderWidth: 1,
     },
-    metaLabel: { fontSize: FONT.xs, fontWeight: FONT.medium },
+    metaLabel: { fontSize: 12, fontWeight: 'bold' },
 
-    sectionTitle: { fontSize: FONT.lg, fontWeight: FONT.bold, marginBottom: SPACING.md, marginTop: SPACING.sm },
+    sectionTitle: { fontSize: 18, fontWeight: '900', marginBottom: SPACING.md, marginTop: SPACING.md },
 
     mealCard: {
-        padding: SPACING.lg, borderRadius: RADIUS.lg,
+        padding: SPACING.lg, borderRadius: RADIUS.xl,
         marginBottom: SPACING.md, borderWidth: 1,
+        ...SHADOW.sm,
     },
     mealHeader: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         marginBottom: SPACING.md, paddingBottom: SPACING.sm, borderBottomWidth: 1,
     },
-    mealName: { fontSize: FONT.md, fontWeight: FONT.semibold },
-    mealCal: { fontSize: FONT.sm, fontWeight: FONT.bold },
-    mealItemRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.xs },
-    bullet: { fontSize: FONT.md, marginRight: SPACING.sm, lineHeight: 20 },
-    mealItem: { fontSize: FONT.sm, lineHeight: 20, flex: 1 },
+    mealName: { fontSize: 16, fontWeight: '800' },
+    mealCal: { fontSize: 14, fontWeight: 'bold' },
+    mealItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+    dot: { width: 6, height: 6, borderRadius: 3, marginRight: 10 },
+    mealItem: { fontSize: 14, fontWeight: '500', flex: 1 },
 
-    tipsCard: { padding: SPACING.lg, borderRadius: RADIUS.lg, marginBottom: SPACING.xl },
-    tipRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.md },
-    tipIcon: { fontSize: 14, marginRight: SPACING.sm, marginTop: 2 },
-    tipText: { fontSize: FONT.sm, lineHeight: 20, flex: 1 },
+    tipsCard: { padding: SPACING.lg, borderRadius: RADIUS.xl, marginBottom: SPACING.xl, borderWidth: 1 },
+    tipRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+    tipIcon: { fontSize: 14, marginRight: 10, marginTop: 2 },
+    tipText: { fontSize: 14, lineHeight: 20, flex: 1, fontWeight: '500' },
 
-    summaryCard: {
-        padding: SPACING.xl, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.xl, borderWidth: 1,
-    },
-    summaryTitle: { fontSize: FONT.sm, fontWeight: FONT.bold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: SPACING.md },
-    summaryRow: {
-        flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SPACING.md,
-        borderBottomWidth: 1,
-    },
-    summaryLabel: { fontSize: FONT.md },
-    summaryValue: { fontSize: FONT.md, fontWeight: FONT.semibold },
-
-    actionBtn: {
-        flexDirection: 'row', width: '100%',
-        padding: SPACING.lg, borderRadius: RADIUS.lg,
-        alignItems: 'center', justifyContent: 'center',
-        borderRadius: 12, ...SHADOW.md,
-    },
-    actionBtnIcon: { fontSize: 18, marginRight: SPACING.sm },
-    actionBtnText: { fontSize: FONT.lg, fontWeight: FONT.bold },
-    secondaryBtn: {
-        backgroundColor: 'transparent', borderWidth: 1.5,
-        marginTop: SPACING.md,
-    },
+    footer: {
+        flexDirection: 'row',
+        paddingHorizontal: SPACING.xl,
+        paddingTop: SPACING.md,
+        backgroundColor: 'transparent',
+    }
 });

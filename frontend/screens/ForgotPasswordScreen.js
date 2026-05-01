@@ -65,9 +65,9 @@ export default function ForgotPasswordScreen({ navigation }) {
                                 activeOpacity={0.8}
                             >
                                 {loading ? (
-                                    <ActivityIndicator color="#fff" />
+                                    <ActivityIndicator color={theme.textInverse} />
                                 ) : (
-                                    <Text style={styles.btnText}>Send Reset Email</Text>
+                                    <Text style={[styles.btnText, { color: theme.textInverse }]}>Send Reset Email</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
         padding: SPACING.lg, borderRadius: RADIUS.md,
         alignItems: 'center', ...SHADOW.sm,
     },
-    btnText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
+    btnText: { fontSize: FONT.lg, fontWeight: FONT.bold },
 
     successCard: {
         padding: SPACING.xxl,

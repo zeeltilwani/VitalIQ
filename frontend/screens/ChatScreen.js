@@ -74,7 +74,7 @@ export default function ChatScreen({ navigation }) {
                     ]}>
                         <Text style={[
                             styles.msgText,
-                            { color: item.role === 'user' ? '#fff' : theme.text }
+                            { color: item.role === 'user' ? theme.textInverse : theme.text }
                         ]}>{item.text}</Text>
                     </View>
                 )}
@@ -115,7 +115,7 @@ export default function ChatScreen({ navigation }) {
                         onPress={() => sendMessage()}
                         disabled={loading || !input.trim()}
                     >
-                        {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.sendIcon}>➤</Text>}
+                        {loading ? <ActivityIndicator color={theme.textInverse} size="small" /> : <Text style={[styles.sendIcon, { color: theme.textInverse }]}>➤</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -155,5 +155,5 @@ const styles = StyleSheet.create({
         marginLeft: SPACING.sm,
         width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center',
     },
-    sendIcon: { fontSize: 18, color: '#fff' },
+    sendIcon: { fontSize: 18 },
 });

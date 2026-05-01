@@ -110,9 +110,9 @@ export default function SignupScreen({ navigation }) {
                             activeOpacity={0.8}
                         >
                             {loading ? (
-                                <ActivityIndicator color="#fff" />
+                                <ActivityIndicator color={theme.textInverse} />
                             ) : (
-                                <Text style={styles.btnText}>Create Account</Text>
+                                <Text style={[styles.btnText, { color: theme.textInverse }]}>Create Account</Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
         padding: SPACING.lg, borderRadius: RADIUS.md,
         alignItems: 'center', marginTop: SPACING.sm, ...SHADOW.sm,
     },
-    btnText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
+    btnText: { fontSize: FONT.lg, fontWeight: FONT.bold },
 
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: SPACING.xxxl },
     footerText: { fontSize: FONT.md },

@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING, RADIUS, FONT } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 
 const PLANS = [
     {
@@ -90,58 +90,59 @@ const PLANS = [
         totalCalories: 2400,
         tips: ['Prioritize lean cuts of meat', 'Include fish 2-3 times per week for omega-3s', 'Time your largest meal post-workout', 'Cook with minimal oil – grill, bake, or steam'],
     },
-    {
-        id: 6,
-        title: 'Keto Diet',
-        desc: 'High fat, very low carb plan for ketosis and fat adaptation.',
-        icon: '🥑',
-        category: 'Low Carb',
-        duration: '6 Weeks',
-        meals: [
-            { meal: 'Breakfast', items: ['3 eggs cooked in butter', 'Avocado (half)', 'Cheese slices (30g)'], calories: 480 },
-            { meal: 'Mid-Morning', items: ['Bulletproof coffee (coffee + MCT oil + butter)', 'Macadamia nuts (20g)'], calories: 300 },
-            { meal: 'Lunch', items: ['Grilled salmon (180g)', 'Caesar salad with olive oil dressing', 'No croutons'], calories: 520 },
-            { meal: 'Snack', items: ['Celery sticks with cream cheese', 'Pork rinds'], calories: 200 },
-            { meal: 'Dinner', items: ['Butter chicken (no sugar, 200g)', 'Cauliflower rice', 'Sautéed spinach in ghee'], calories: 550 },
-        ],
-        totalCalories: 2050,
-        tips: ['Keep net carbs under 25g/day', 'Supplement electrolytes (sodium, potassium, magnesium)', 'Expect "keto flu" in first week – it passes', 'Track macros carefully for best results'],
-    },
-    {
-        id: 7,
-        title: 'Diabetic Friendly',
-        desc: 'Low glycemic index foods to manage blood sugar levels.',
-        icon: '🩸',
-        category: 'Medical',
-        duration: 'Ongoing',
-        meals: [
-            { meal: 'Breakfast', items: ['Steel-cut oats with cinnamon', 'Boiled egg (1)', 'Herbal tea'], calories: 320 },
-            { meal: 'Mid-Morning', items: ['Cucumber and carrot sticks', 'Hummus (2 tbsp)'], calories: 120 },
-            { meal: 'Lunch', items: ['Grilled chicken (120g)', 'Quinoa (1/2 cup)', 'Spinach and tomato salad'], calories: 400 },
-            { meal: 'Snack', items: ['Small handful of almonds', 'Green apple slices'], calories: 150 },
-            { meal: 'Dinner', items: ['Baked fish (150g)', 'Steamed vegetables', 'Small portion brown rice'], calories: 380 },
-        ],
-        totalCalories: 1370,
-        tips: ['Monitor blood sugar before and after meals', 'Choose whole grains over refined carbs', 'Eat at consistent times each day', 'Include fiber with every meal to slow glucose absorption'],
-    },
-    {
-        id: 8,
-        title: 'Student Budget Diet',
-        desc: 'Affordable, nutritious meal prep for students on a budget.',
-        icon: '🎒',
-        category: 'Budget',
-        duration: '4 Weeks',
-        meals: [
-            { meal: 'Breakfast', items: ['Overnight oats with banana and peanut butter', 'Tea/coffee'], calories: 350 },
-            { meal: 'Mid-Morning', items: ['Boiled egg (1)', 'Toast with jam'], calories: 180 },
-            { meal: 'Lunch', items: ['Dal rice (moong dal + basmati rice)', 'Seasonal vegetable sabzi', 'Curd'], calories: 480 },
-            { meal: 'Snack', items: ['Roasted chana (chickpeas)', 'Seasonal fruit'], calories: 150 },
-            { meal: 'Dinner', items: ['Egg bhurji (2 eggs)', '2 rotis', 'Onion-tomato salad'], calories: 420 },
-        ],
-        totalCalories: 1580,
-        tips: ['Buy seasonal fruits and vegetables', 'Meal prep on weekends to save time', 'Use eggs and lentils as primary protein sources', 'Avoid packaged/processed snacks'],
-    },
 ];
+
+const DietCard = ({ plan, index, navigation, theme }) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    };
+
+    return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: SPACING.lg }}>
+            <TouchableOpacity
+                activeOpacity={1}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                onPress={() => navigation.navigate('DietPlanDetail', { plan })}
+                style={[
+                    styles.card,
+                    { 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        shadowColor: theme.shadow
+                    }
+                ]}
+            >
+                <View style={[styles.iconBox, { backgroundColor: theme.primaryLight }]}>
+                    <Text style={styles.iconText}>{plan.icon}</Text>
+                </View>
+                <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                        <Text style={[styles.cardTitle, { color: theme.text }]}>{plan.title}</Text>
+                        <View style={[styles.catBadge, { backgroundColor: theme.surfaceLight }]}>
+                            <Text style={[styles.catText, { color: theme.textSecondary }]}>{plan.category}</Text>
+                        </View>
+                    </View>
+                    <Text style={[styles.cardDesc, { color: theme.textSecondary }]} numberOfLines={2}>
+                        {plan.desc}
+                    </Text>
+                    <View style={styles.metaRow}>
+                        <Text style={[styles.metaText, { color: theme.primary }]}>🔥 {plan.totalCalories} kcal</Text>
+                        <Text style={[styles.metaDivider, { color: theme.border }]}>|</Text>
+                        <Text style={[styles.metaText, { color: theme.textSecondary }]}>🗓️ {plan.duration}</Text>
+                    </View>
+                </View>
+                <Text style={[styles.arrow, { color: theme.border }]}>›</Text>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 export default function DietPlansScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -151,35 +152,12 @@ export default function DietPlansScreen({ navigation }) {
         <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
             <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Diet Plans</Text>
-                <Text style={[styles.headerSub, { color: theme.textSecondary }]}>Curated nutrition plans for every goal</Text>
+                <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
+                    Scientifically curated nutrition for your goals
+                </Text>
 
-                {PLANS.map((plan) => (
-                    <TouchableOpacity
-                        key={plan.id}
-                        style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                        onPress={() => navigation.navigate('DietPlanDetail', { plan })}
-                        activeOpacity={0.7}
-                    >
-                        <View style={[styles.iconBox, { backgroundColor: theme.primaryLight }]}>
-                            <Text style={styles.icon}>{plan.icon}</Text>
-                        </View>
-                        <View style={styles.cardContent}>
-                            <Text style={[styles.cardTitle, { color: theme.text }]}>{plan.title}</Text>
-                            <Text style={[styles.cardDesc, { color: theme.textSecondary }]}>{plan.desc}</Text>
-                            <View style={styles.badgeRow}>
-                                <View style={[styles.badge, { backgroundColor: theme.surfaceLight }]}>
-                                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{plan.category}</Text>
-                                </View>
-                                <View style={[styles.badge, { backgroundColor: theme.surfaceLight }]}>
-                                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{plan.duration}</Text>
-                                </View>
-                                <View style={[styles.badge, { backgroundColor: theme.surfaceLight }]}>
-                                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{plan.totalCalories} kcal/day</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <Text style={[styles.arrow, { color: theme.textSecondary }]}>›</Text>
-                    </TouchableOpacity>
+                {PLANS.map((plan, index) => (
+                    <DietCard key={plan.id} plan={plan} index={index} navigation={navigation} theme={theme} />
                 ))}
 
                 <View style={{ height: 100 }} />
@@ -191,27 +169,33 @@ export default function DietPlansScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     inner: { padding: SPACING.xl },
-    headerTitle: { fontSize: FONT.title, fontWeight: FONT.black },
-    headerSub: { fontSize: FONT.sm, marginBottom: SPACING.xl, marginTop: SPACING.xs },
+    headerTitle: { fontSize: FONT.title, fontWeight: '900' },
+    headerSub: { fontSize: FONT.sm, marginBottom: SPACING.xxl, marginTop: 4, fontWeight: '500' },
 
     card: {
-        padding: SPACING.lg, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.md, flexDirection: 'row', alignItems: 'center',
+        padding: SPACING.lg, 
+        borderRadius: RADIUS.xl,
+        flexDirection: 'row', 
+        alignItems: 'center',
         borderWidth: 1,
+        ...SHADOW.sm,
     },
     iconBox: {
-        width: 52, height: 52,
-        borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.lg,
+        width: 60, height: 60,
+        borderRadius: RADIUS.lg, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginRight: SPACING.lg,
     },
-    icon: { fontSize: 26 },
+    iconText: { fontSize: 30 },
     cardContent: { flex: 1 },
-    cardTitle: { fontSize: FONT.md, fontWeight: FONT.bold, marginBottom: SPACING.xs },
-    cardDesc: { fontSize: FONT.sm, lineHeight: 18, marginBottom: SPACING.sm },
-    badgeRow: { flexDirection: 'row', flexWrap: 'wrap' },
-    badge: {
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: 3, borderRadius: RADIUS.sm, marginRight: SPACING.xs, marginBottom: SPACING.xs,
-    },
-    badgeText: { fontSize: FONT.xs, fontWeight: FONT.medium },
-    arrow: { fontSize: 24, paddingLeft: SPACING.sm },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+    cardTitle: { fontSize: FONT.md, fontWeight: '800' },
+    catBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+    catText: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+    cardDesc: { fontSize: 13, lineHeight: 18, marginBottom: 8 },
+    metaRow: { flexDirection: 'row', alignItems: 'center' },
+    metaText: { fontSize: 12, fontWeight: 'bold' },
+    metaDivider: { marginHorizontal: 8 },
+    arrow: { fontSize: 24, fontWeight: '300', marginLeft: SPACING.sm },
 });
