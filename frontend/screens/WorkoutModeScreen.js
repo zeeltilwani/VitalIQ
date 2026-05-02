@@ -71,12 +71,10 @@ export default function WorkoutModeScreen({ route, navigation }) {
 
     const handleCompleteSet = () => {
         if (currentSet < currentExercise.sets) {
-            // Start Rest
             setIsResting(true);
             setTimeLeft(REST_TIME);
             setTimerActive(true);
         } else {
-            // Move to next exercise
             handleNextExercise();
         }
     };
@@ -112,8 +110,16 @@ export default function WorkoutModeScreen({ route, navigation }) {
         handleNextExercise();
     };
 
-    // Mapping key
-    const exerciseAsset = getExerciseAsset(currentExercise?.gifName);
+    const togglePause = () => {
+        setTimerActive(prev => !prev);
+    };
+
+    const nextExercisePreview = currentIndex < exercises.length - 1 ? exercises[currentIndex + 1].name : 'Finish Workout';
+    
+    // Fallback logic for GIFs
+    const exerciseAsset = currentExercise?.gifName 
+        ? { uri: `https://raw.githubusercontent.com/vitaliq-assets/gifs/main/${currentExercise.gifName}.gif` } 
+        : getExerciseAsset(currentExercise?.gifName); // Safe fallback using registry
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
@@ -130,8 +136,10 @@ export default function WorkoutModeScreen({ route, navigation }) {
                         <View style={[styles.progressFill, { width: `${((currentIndex + 1) / exercises.length) * 100}%`, backgroundColor: theme.primary }]} />
                     </View>
                 </View>
-                <TouchableOpacity onPress={skipExercise} style={styles.headerBtn}>
-                    <Text style={[styles.skipText, { color: theme.textSecondary }]}>Skip Exercise ⏭</Text>
+                <TouchableOpacity onPress={togglePause} style={styles.headerBtn}>
+                    <Text style={[styles.skipText, { color: theme.textSecondary }]}>
+                        {timerActive ? '⏸ Pause' : '▶️ Resume'}
+                    </Text>
                 </TouchableOpacity>
             </View>
 
@@ -141,7 +149,7 @@ export default function WorkoutModeScreen({ route, navigation }) {
                     <Animated.View style={[
                         styles.pulseCircle, 
                         { 
-                            transform: [{ scale: pulseAnim }], 
+                            transform: [{ scale: timerActive ? pulseAnim : 1 }], 
                             borderColor: isResting ? theme.accent : theme.primary,
                             backgroundColor: theme.surface
                         }
@@ -153,7 +161,7 @@ export default function WorkoutModeScreen({ route, navigation }) {
                         />
                     </Animated.View>
                     <View style={[styles.statusBadge, { backgroundColor: isResting ? theme.accent : theme.primary }]}>
-                        <Text style={styles.statusText}>{isResting ? 'RESTING' : 'ACTIVE'}</Text>
+                        <Text style={[styles.statusText, { color: theme.textInverse }]}>{isResting ? 'RESTING' : 'ACTIVE'}</Text>
                     </View>
                 </View>
 
@@ -173,20 +181,27 @@ export default function WorkoutModeScreen({ route, navigation }) {
                             {isResting ? 'Remaining Rest' : 'Exercise Time'}
                         </Text>
                     </View>
+                    
+                    {isResting && (
+                        <View style={styles.upNextBox}>
+                            <Text style={[styles.upNextLabel, { color: theme.textSecondary }]}>UP NEXT</Text>
+                            <Text style={[styles.upNextText, { color: theme.primary }]}>{nextExercisePreview}</Text>
+                        </View>
+                    )}
                 </View>
 
-                {/* Footer Controls (Task 2 Buttons) */}
+                {/* Footer Controls */}
                 <View style={styles.footer}>
                     {isResting ? (
                         <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.accent }]} onPress={skipRest}>
-                            <Text style={styles.mainBtnText}>Skip Rest ⏭</Text>
+                            <Text style={[styles.mainBtnText, { color: theme.textInverse }]}>Skip Rest ⏭</Text>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity 
                             style={[styles.mainBtn, { backgroundColor: theme.primary }]} 
                             onPress={handleCompleteSet}
                         >
-                            <Text style={styles.mainBtnText}>Complete Set ✅</Text>
+                            <Text style={[styles.mainBtnText, { color: theme.textInverse }]}>Complete Set ✅</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -200,7 +215,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
     headerBtn: { padding: 4 },
     backText: { fontWeight: 'bold' },
-    skipText: { fontSize: 12, fontWeight: 'bold' },
+    skipText: { fontSize: 14, fontWeight: 'bold' },
     progressHeader: { flex: 1, alignItems: 'center', paddingHorizontal: SPACING.xl },
     progressText: { fontSize: 10, fontWeight: 'bold', marginBottom: 4 },
     progressTrack: { height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' },
@@ -216,7 +231,7 @@ const styles = StyleSheet.create({
     },
     exerciseImage: { width: '80%', height: '80%' },
     statusBadge: { position: 'absolute', bottom: -10, paddingHorizontal: 20, paddingVertical: 4, borderRadius: 12, ...SHADOW.sm },
-    statusText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+    statusText: { fontSize: 12, fontWeight: '900' },
 
     infoSection: { alignItems: 'center' },
     name: { fontSize: 32, fontWeight: '900', textAlign: 'center' },
@@ -224,8 +239,11 @@ const styles = StyleSheet.create({
     timerContainer: { alignItems: 'center', marginTop: 20 },
     timerValue: { fontSize: 70, fontWeight: '900' },
     timerLabel: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
+    upNextBox: { marginTop: 20, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: RADIUS.lg },
+    upNextLabel: { fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
+    upNextText: { fontSize: 18, fontWeight: 'bold' },
 
     footer: { width: '100%' },
     mainBtn: { paddingVertical: 18, borderRadius: RADIUS.xl, alignItems: 'center', ...SHADOW.md },
-    mainBtnText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+    mainBtnText: { fontSize: 20, fontWeight: 'bold' },
 });

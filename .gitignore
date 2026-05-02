@@ -4,4 +4,9 @@ node_modules/
 dist/
 build/
 *.log
-.DS_Store
+.DS_Storefrontend/assets/videos/*.mp4
+frontend/assets/videos/*.mp4
+frontend/assets/videos/
+*.mp4
+media/
+frontend/assets/videos/

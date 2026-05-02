@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, FlatList,
-    Modal, StyleSheet, Animated, Dimensions, ScrollView
+    Modal, StyleSheet, Animated, Dimensions,
 } from 'react-native';
-import { COLORS, RADIUS, FONT, SHADOW, SPACING } from '../theme';
+import { RADIUS, FONT, SHADOW, SPACING } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -52,9 +53,10 @@ const QUICK_QUESTIONS = [
 ];
 
 export default function FloatingAI() {
+    const { theme } = useTheme();
     const [visible, setVisible] = useState(false);
     const [messages, setMessages] = useState([
-        { role: 'bot', text: 'Hi! 👋 I\'m your VitalIQ health assistant.\nTap a question below to get started!' }
+        { role: 'bot', text: "Hi! 👋 I'm your VitalIQ health assistant.\nTap a question below to get started!" },
     ]);
     const [showQuestions, setShowQuestions] = useState(true);
     const flatListRef = useRef(null);
@@ -63,7 +65,7 @@ export default function FloatingAI() {
     const pulseButton = () => {
         Animated.sequence([
             Animated.timing(scaleAnim, { toValue: 0.85, duration: 100, useNativeDriver: true }),
-            Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+            Animated.timing(scaleAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
         ]).start();
     };
 
@@ -73,26 +75,36 @@ export default function FloatingAI() {
     };
 
     const handleQuestionTap = (item) => {
-        // Add user question
         setMessages(prev => [...prev, { role: 'user', text: item.question }]);
-        // Add bot answer
         setTimeout(() => {
             setMessages(prev => [...prev, { role: 'bot', text: item.answer }]);
-            setShowQuestions(true); // Keep showing questions for next tap
+            setShowQuestions(true);
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
         }, 300);
     };
 
     const handleReset = () => {
         setMessages([
-            { role: 'bot', text: 'Hi! 👋 I\'m your VitalIQ health assistant.\nTap a question below to get started!' }
+            { role: 'bot', text: "Hi! 👋 I'm your VitalIQ health assistant.\nTap a question below to get started!" },
         ]);
         setShowQuestions(true);
     };
 
     const renderMessage = ({ item }) => (
-        <View style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.botBubble]}>
-            <Text style={[styles.bubbleText, item.role === 'user' && { color: COLORS.textInverse }]}>
+        <View
+            style={[
+                styles.bubble,
+                item.role === 'user'
+                    ? [styles.userBubble, { backgroundColor: theme.primary }]
+                    : [styles.botBubble, { backgroundColor: theme.surface, borderColor: theme.border }],
+            ]}
+        >
+            <Text
+                style={[
+                    styles.bubbleText,
+                    { color: item.role === 'user' ? '#FFFFFF' : theme.text },
+                ]}
+            >
                 {item.text}
             </Text>
         </View>
@@ -102,7 +114,11 @@ export default function FloatingAI() {
         <>
             {/* Floating Action Button */}
             <Animated.View style={[styles.fabContainer, { transform: [{ scale: scaleAnim }] }]}>
-                <TouchableOpacity style={styles.fab} onPress={toggleChat} activeOpacity={0.8}>
+                <TouchableOpacity
+                    style={[styles.fab, { backgroundColor: theme.primary }]}
+                    onPress={toggleChat}
+                    activeOpacity={0.8}
+                >
                     <Text style={styles.fabIcon}>{visible ? '✕' : '🤖'}</Text>
                 </TouchableOpacity>
             </Animated.View>
@@ -110,19 +126,27 @@ export default function FloatingAI() {
             {/* Chat Modal */}
             <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.bg }]}>
                         {/* Header */}
-                        <View style={styles.modalHeader}>
+                        <View style={[styles.modalHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
                             <View>
-                                <Text style={styles.modalTitle}>VitalIQ Assistant</Text>
-                                <Text style={styles.modalSubtitle}>Tap a question to get instant answers</Text>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>VitalIQ Assistant</Text>
+                                <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
+                                    Tap a question to get instant answers
+                                </Text>
                             </View>
                             <View style={styles.headerActions}>
-                                <TouchableOpacity onPress={handleReset} style={styles.resetBtn}>
-                                    <Text style={styles.resetText}>🔄</Text>
+                                <TouchableOpacity
+                                    onPress={handleReset}
+                                    style={[styles.headerBtn, { backgroundColor: theme.surfaceLight }]}
+                                >
+                                    <Text style={{ fontSize: 16 }}>🔄</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setVisible(false)} style={styles.closeBtn}>
-                                    <Text style={styles.closeBtnText}>✕</Text>
+                                <TouchableOpacity
+                                    onPress={() => setVisible(false)}
+                                    style={[styles.headerBtn, { backgroundColor: theme.surfaceLight }]}
+                                >
+                                    <Text style={[styles.closeBtnText, { color: theme.textSecondary }]}>✕</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -138,16 +162,23 @@ export default function FloatingAI() {
                             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                             ListFooterComponent={
                                 showQuestions ? (
-                                    <View style={styles.questionsContainer}>
-                                        <Text style={styles.questionsLabel}>Quick Questions</Text>
+                                    <View style={[styles.questionsContainer, { borderTopColor: theme.border }]}>
+                                        <Text style={[styles.questionsLabel, { color: theme.textSecondary }]}>
+                                            Quick Questions
+                                        </Text>
                                         {QUICK_QUESTIONS.map(q => (
                                             <TouchableOpacity
                                                 key={q.id}
-                                                style={styles.questionBtn}
+                                                style={[
+                                                    styles.questionBtn,
+                                                    { backgroundColor: theme.surface, borderColor: theme.border },
+                                                ]}
                                                 onPress={() => handleQuestionTap(q)}
                                                 activeOpacity={0.7}
                                             >
-                                                <Text style={styles.questionText}>{q.question}</Text>
+                                                <Text style={[styles.questionText, { color: theme.text }]}>
+                                                    {q.question}
+                                                </Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -167,64 +198,57 @@ const styles = StyleSheet.create({
     },
     fab: {
         width: 56, height: 56, borderRadius: 28,
-        backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
-        ...SHADOW.lg,
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: '#22C55E',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 10,
     },
-    fabIcon: { fontSize: 24, color: COLORS.textInverse },
+    fabIcon: { fontSize: 24, color: '#FFFFFF' },
 
     modalOverlay: {
-        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end',
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end',
     },
     modalContent: {
-        height: SCREEN_HEIGHT * 0.8, backgroundColor: COLORS.bg,
+        height: SCREEN_HEIGHT * 0.8,
         borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, overflow: 'hidden',
     },
     modalHeader: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         padding: SPACING.xl, paddingBottom: SPACING.lg,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border, backgroundColor: COLORS.surface,
+        borderBottomWidth: 1,
     },
-    modalTitle: { fontSize: FONT.lg, fontWeight: FONT.bold, color: COLORS.text },
-    modalSubtitle: { fontSize: FONT.xs, color: COLORS.textSecondary, marginTop: 2 },
-    headerActions: { flexDirection: 'row', alignItems: 'center' },
-    resetBtn: {
-        width: 32, height: 32, borderRadius: 16,
-        backgroundColor: COLORS.surfaceLight, justifyContent: 'center', alignItems: 'center',
-        marginRight: SPACING.sm,
+    modalTitle: { fontSize: FONT.lg, fontWeight: FONT.bold },
+    modalSubtitle: { fontSize: FONT.xs, marginTop: 2 },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+    headerBtn: {
+        width: 34, height: 34, borderRadius: 17,
+        justifyContent: 'center', alignItems: 'center',
     },
-    resetText: { fontSize: 16 },
-    closeBtn: {
-        width: 32, height: 32, borderRadius: 16,
-        backgroundColor: COLORS.surfaceLight, justifyContent: 'center', alignItems: 'center',
-    },
-    closeBtnText: { color: COLORS.textSecondary, fontSize: 16, fontWeight: FONT.bold },
+    closeBtnText: { fontSize: 16, fontWeight: FONT.bold },
 
     messageList: { padding: SPACING.lg, paddingBottom: SPACING.xl },
     bubble: {
         maxWidth: '85%', padding: SPACING.md, paddingHorizontal: SPACING.lg,
         borderRadius: RADIUS.lg, marginBottom: SPACING.sm,
     },
-    userBubble: {
-        backgroundColor: COLORS.primary, alignSelf: 'flex-end', borderBottomRightRadius: RADIUS.sm,
-    },
-    botBubble: {
-        backgroundColor: COLORS.surface, alignSelf: 'flex-start', borderBottomLeftRadius: RADIUS.sm,
-    },
-    bubbleText: { fontSize: FONT.md, lineHeight: 22, color: COLORS.text },
+    userBubble: { alignSelf: 'flex-end', borderBottomRightRadius: RADIUS.sm },
+    botBubble: { alignSelf: 'flex-start', borderBottomLeftRadius: RADIUS.sm, borderWidth: 1 },
+    bubbleText: { fontSize: FONT.md, lineHeight: 22 },
 
-    // Quick Questions
     questionsContainer: {
         marginTop: SPACING.lg, paddingTop: SPACING.md,
-        borderTopWidth: 1, borderTopColor: COLORS.border,
+        borderTopWidth: 1,
     },
     questionsLabel: {
-        color: COLORS.textSecondary, fontSize: FONT.xs, fontWeight: FONT.bold,
+        fontSize: FONT.xs, fontWeight: FONT.bold,
         textTransform: 'uppercase', letterSpacing: 1, marginBottom: SPACING.md,
     },
     questionBtn: {
-        backgroundColor: COLORS.surface, padding: SPACING.md, paddingHorizontal: SPACING.lg,
+        padding: SPACING.md, paddingHorizontal: SPACING.lg,
         borderRadius: RADIUS.lg, marginBottom: SPACING.sm,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
     },
-    questionText: { color: COLORS.text, fontSize: FONT.sm, fontWeight: FONT.medium },
+    questionText: { fontSize: FONT.sm, fontWeight: FONT.medium },
 });

@@ -3,7 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api';
 
@@ -55,20 +55,20 @@ export default function AnalyticsScreen({ route, navigation }) {
         suggestions.push({ icon: '⚠️', text: 'You exceeded your goal. Try lighter meals tomorrow.', color: theme.danger });
     }
     if (todaySummary.calories < dailyGoal * 0.5 && todaySummary.calories > 0) {
-        suggestions.push({ icon: '🍽️', text: 'You\'re under-eating. Make sure to fuel your body.', color: '#f59e0b' });
+        suggestions.push({ icon: '🍽️', text: 'You\'re under-eating. Make sure to fuel your body.', color: theme.warning });
     }
     if (todaySummary.water < 1500) {
-        suggestions.push({ icon: '💧', text: 'Drink more water — aim for 8 glasses daily.', color: '#3b82f6' });
+        suggestions.push({ icon: '💧', text: 'Drink more water — aim for 8 glasses daily.', color: theme.info });
     }
     if (avgCalories > dailyGoal * 1.1 && daysLogged >= 3) {
-        suggestions.push({ icon: '📉', text: 'Weekly average is above goal. Reduce carbs or portion sizes.', color: '#f97316' });
+        suggestions.push({ icon: '📉', text: 'Weekly average is above goal. Reduce carbs or portion sizes.', color: theme.accent });
     }
     if (avgCalories > 0 && avgCalories <= dailyGoal) {
         suggestions.push({ icon: '✅', text: 'Your weekly average is on target. Great consistency!', color: theme.primary });
     }
-    suggestions.push({ icon: '💪', text: 'Increase protein intake to preserve muscle during weight management.', color: '#8b5cf6' });
+    suggestions.push({ icon: '💪', text: 'Increase protein intake to preserve muscle during weight management.', color: theme.accent });
     if (consistency < 70) {
-        suggestions.push({ icon: '📅', text: `You logged ${daysLogged}/7 days this week. Log daily for better insights.`, color: '#f59e0b' });
+        suggestions.push({ icon: '📅', text: `You logged ${daysLogged}/7 days this week. Log daily for better insights.`, color: theme.warning });
     }
 
     const maxCal = Math.max(dailyGoal, ...weekTrend.map(d => parseInt(d.calories || 0)));
@@ -91,8 +91,8 @@ export default function AnalyticsScreen({ route, navigation }) {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
 
                 {error && (
-                    <View style={styles.errorBox}>
-                        <Text style={styles.errorText}>⚠️ Could not load data. Pull down to retry.</Text>
+                    <View style={[styles.errorBox, { backgroundColor: theme.danger + '20' }]}>
+                        <Text style={[styles.errorText, { color: theme.danger }]}>⚠️ Could not load data. Pull down to retry.</Text>
                     </View>
                 )}
 
@@ -141,7 +141,7 @@ export default function AnalyticsScreen({ route, navigation }) {
                             <Text style={[styles.weekStatLabel, { color: theme.textSecondary }]}>Avg kcal/day</Text>
                         </View>
                         <View style={styles.weekStat}>
-                            <Text style={[styles.weekStatVal, { color: consistency >= 70 ? theme.primary : '#f59e0b' }]}>
+                            <Text style={[styles.weekStatVal, { color: consistency >= 70 ? theme.primary : theme.warning }]}>
                                 {consistency}%
                             </Text>
                             <Text style={[styles.weekStatLabel, { color: theme.textSecondary }]}>Consistency</Text>
@@ -190,7 +190,7 @@ export default function AnalyticsScreen({ route, navigation }) {
                     <View style={[styles.progressBg, { backgroundColor: theme.surfaceLight }]}>
                         <View style={[
                             styles.progressFill,
-                            { width: `${Math.min((todaySummary.water / 2000) * 100, 100)}%`, backgroundColor: '#3b82f6' },
+                            { width: `${Math.min((todaySummary.water / 2000) * 100, 100)}%`, backgroundColor: theme.info },
                         ]} />
                     </View>
                     <Text style={[styles.waterGoalText, { color: theme.textSecondary }]}>{Math.max(2000 - todaySummary.water, 0)} ml remaining (target: 2L)</Text>
@@ -226,10 +226,10 @@ const styles = StyleSheet.create({
     inner: { padding: SPACING.xl },
 
     errorBox: {
-        backgroundColor: COLORS.dangerLight, padding: SPACING.md, borderRadius: RADIUS.md,
+        padding: SPACING.md, borderRadius: RADIUS.md,
         marginBottom: SPACING.lg,
     },
-    errorText: { color: COLORS.danger, fontSize: FONT.sm, textAlign: 'center' },
+    errorText: { fontSize: FONT.sm, textAlign: 'center' },
 
     card: {
         padding: SPACING.xl, borderRadius: RADIUS.xl,

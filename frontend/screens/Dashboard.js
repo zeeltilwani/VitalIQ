@@ -1,12 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW, COLORS } from '../theme';
 import api from '../api';
-import DailySummaryCard from '../components/DailySummaryCard';
-import SuggestionCard from '../components/SuggestionCard';
 import { useTheme } from '../context/ThemeContext';
+import PressableButton from '../components/PressableButton';
+
+import Svg, { Circle } from 'react-native-svg';
+import { Flame, Target, ChevronRight, Scan, Plus, Minus } from 'lucide-react-native';
+import { NUTRITION_ICONS } from '../assets/nutrition';
+import { HYDRATION_ASSETS } from '../assets/hydration';
+import { DIET_IMAGES } from '../assets/diet';
 
 const GLASS_ML = 250;
 const GLASS_GOAL = 8;
@@ -35,15 +40,14 @@ export default function Dashboard({ route, navigation }) {
             setMeals(mealsRes.data);
         } catch (err) {
             console.error('Fetch error:', err);
-            Alert.alert("Connection Error", "Could not refresh your health data. Please check your internet.");
         } finally {
             setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        if (isFocused || route.params?.refresh) fetchProfileAndData();
-    }, [isFocused, fetchProfileAndData, route.params?.refresh]);
+        if (isFocused) fetchProfileAndData();
+    }, [isFocused, fetchProfileAndData]);
 
     const dailyGoal = user?.daily_calorie_goal || 2000;
     const glassCount = Math.floor(summary.water / GLASS_ML);
@@ -59,262 +63,266 @@ export default function Dashboard({ route, navigation }) {
         }
     };
 
-    // ─── Glass Icons ───
-    const GlassRow = () => {
-        const glasses = [];
-        for (let i = 0; i < GLASS_GOAL; i++) {
-            glasses.push(
-                <Text key={i} style={[styles.glassIcon, i < glassCount && styles.glassIconActive]}>
-                    🥛
-                </Text>
-            );
-        }
-        return <View style={styles.glassRow}>{glasses}</View>;
-    };
-
-    // ─── Progress Bar ───
     const ProgressBar = ({ current, total, color }) => (
-        <View style={[styles.progressBarBg, { backgroundColor: theme.surfaceLight }]}>
-            <View style={[styles.progressBarFill, { width: `${Math.min((current / total) * 100, 100)}%`, backgroundColor: color }]} />
+        <View style={[styles.progressBarBg, { backgroundColor: '#222' }]}>
+            <View 
+                style={[
+                    styles.progressBarFill, 
+                    { width: `${Math.min((current / total) * 100, 100)}%`, backgroundColor: color }
+                ]} 
+            />
         </View>
     );
 
-    // ─── Meal Card ───
-    const MealCard = ({ title, data, icon }) => (
-        <View style={[styles.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={[styles.mealHeader, { borderBottomColor: theme.border }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={styles.mealIcon}>{icon}</Text>
-                    <Text style={[styles.mealTitle, { color: theme.text }]}>{title}</Text>
-                    <Text style={[styles.mealKcal, { color: theme.textSecondary }]}>{data.reduce((a, c) => a + c.calories, 0)} kcal</Text>
+    const MealCard = ({ title, data, type }) => (
+        <TouchableOpacity 
+            activeOpacity={0.9}
+            style={[styles.mealCard, { backgroundColor: '#111', borderColor: '#222' }]}
+            onPress={() => navigation.navigate('Log Food', { mealType: title })}
+        >
+            <View style={[styles.mealHeader, { borderBottomColor: '#222' }]}>
+                <View style={styles.mealTitleRow}>
+                    <Image source={NUTRITION_ICONS[type]} style={styles.mealIconImg} />
+                    <Text style={[styles.mealTitle, { color: '#fff' }]}>{title}</Text>
                 </View>
-                <TouchableOpacity
-                    style={[styles.mealAddBtn, { backgroundColor: theme.primaryLight }]}
-                    onPress={() => navigation.navigate('Log Food', { mealType: title })}
-                >
-                    <Text style={[styles.mealAddText, { color: theme.primary }]}>+</Text>
-                </TouchableOpacity>
+                <Text style={[styles.mealKcal, { color: theme.primary }]}>
+                    {data.reduce((a, c) => a + c.calories, 0)} kcal
+                </Text>
             </View>
             {data.length === 0 ? (
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Nothing logged yet</Text>
+                <Text style={[styles.emptyText, { color: '#666' }]}>Log your {title.toLowerCase()}...</Text>
             ) : (
                 data.map((item, i) => (
                     <View key={i} style={styles.foodRow}>
-                        <Text style={[styles.foodName, { color: theme.text }]}>{item.food_name}</Text>
-                        <Text style={[styles.foodCal, { color: theme.textSecondary }]}>{item.calories} kcal</Text>
+                        <Text style={[styles.foodName, { color: '#fff' }]}>{item.food_name}</Text>
+                        <Text style={[styles.foodCal, { color: '#666' }]}>{item.calories} kcal</Text>
                     </View>
                 ))
             )}
-        </View>
+        </TouchableOpacity>
     );
 
     if (loading && !user) {
-        return <View style={[styles.loader, { backgroundColor: theme.bg }]}><ActivityIndicator size="large" color={theme.primary} /></View>;
+        return (
+            <View style={[styles.loader, { backgroundColor: theme.bg }]}>
+                <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+        );
     }
+
+    const avatarSource = user?.profile_picture_url 
+        ? { uri: user.profile_picture_url.startsWith('http') ? user.profile_picture_url : `${api.defaults.baseURL.split('/api')[0]}${user.profile_picture_url}` }
+        : null;
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-
-                {/* ─── Greeting ─── */}
-                <View style={styles.topRow}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                
+                {/* Header Section */}
+                <View style={styles.header}>
                     <View>
-                        <Text style={[styles.greeting, { color: theme.text }]}>Hello, {user?.name?.split(' ')[0]}</Text>
+                        <Text style={[styles.greeting, { color: theme.text }]}>Hi, {user?.name?.split(' ')[0]} 👋</Text>
                         <Text style={[styles.dateText, { color: theme.textSecondary }]}>
                             {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={[styles.avatarBtn, { backgroundColor: theme.primary }]}>
-                        <Text style={styles.avatarText}>{user?.name?.charAt(0) || '?'}</Text>
+                    <TouchableOpacity 
+                        onPress={() => navigation.navigate('Profile')}
+                        style={[styles.avatarContainer, { borderColor: theme.primary }]}
+                    >
+                        {avatarSource ? (
+                            <Image source={avatarSource} style={styles.avatar} />
+                        ) : (
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.primaryLight }]}>
+                                <Text style={[styles.avatarInitial, { color: theme.primary }]}>{user?.name?.charAt(0)}</Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
 
-                {/* ─── Quick Actions ─── */}
-                <View style={styles.quickRow}>
-                    <TouchableOpacity style={[styles.quickBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => navigation.navigate('Log Food')}>
-                        <Text style={styles.quickIcon}>🍽️</Text>
-                        <Text style={[styles.quickLabel, { color: theme.text }]}>Log Food</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.quickBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => navigation.navigate('Scan Food')}>
-                        <Text style={styles.quickIcon}>📷</Text>
-                        <Text style={[styles.quickLabel, { color: theme.text }]}>Scan</Text>
-                    </TouchableOpacity>
-                </View>
+                {/* Main Calorie Ring / Summary Card */}
+                <View style={[styles.summaryCard, { backgroundColor: '#0A0A0A', borderColor: '#1A1A1A' }]}>
+                    <View style={styles.calorieStats}>
+                        <View style={styles.statBox}>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#1A1A1A' }]}>
+                                <Image source={DIET_IMAGES.kcal_icon} style={styles.kcalStatIcon} />
+                            </View>
+                            <Text style={[styles.statVal, { color: '#fff' }]}>{summary.calories}</Text>
+                            <Text style={[styles.statLab, { color: '#666' }]}>EATEN</Text>
+                        </View>
 
-                {/* ─── Calorie Summary ─── */}
-                <View style={[styles.calorieCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <View style={styles.calorieRow}>
-                        <View style={styles.calorieCol}>
-                            <Text style={[styles.calorieLabel, { color: theme.textSecondary }]}>Consumed</Text>
-                            <Text style={[styles.calorieVal, { color: theme.text }]}>{summary.calories}</Text>
-                            <Text style={[styles.calorieUnit, { color: theme.textSecondary }]}>kcal</Text>
+                        <View style={styles.ringContainer}>
+                            <Svg width="160" height="160">
+                                <Circle 
+                                    cx="80" cy="80" r="70" 
+                                    stroke="#1A1A1A" strokeWidth="12" fill="none" 
+                                />
+                                <Circle 
+                                    cx="80" cy="80" r="70" 
+                                    stroke={theme.primary} strokeWidth="12" fill="none" 
+                                    strokeDasharray={2 * Math.PI * 70}
+                                    strokeDashoffset={(2 * Math.PI * 70) * (1 - Math.min(summary.calories / dailyGoal, 1))}
+                                    strokeLinecap="round"
+                                    transform="rotate(-90 80 80)"
+                                />
+                            </Svg>
+                            <View style={styles.ringCenterText}>
+                                <Text style={[styles.ringLabel, { color: '#666' }]}>CALORIES</Text>
+                                <Text style={[styles.remainingVal, { color: '#fff' }]}>{Math.max(dailyGoal - summary.calories, 0)}</Text>
+                                <Text style={[styles.remainingLab, { color: theme.primary }]}>Left</Text>
+                                <Text style={[styles.goalSubText, { color: '#666' }]}>of {dailyGoal} kcal</Text>
+                            </View>
                         </View>
-                        <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
-                        <View style={styles.calorieCol}>
-                            <Text style={[styles.calorieLabel, { color: theme.textSecondary }]}>Remaining</Text>
-                            <Text style={[styles.calorieVal, { color: theme.text }]}>{Math.max(dailyGoal - summary.calories, 0)}</Text>
-                            <Text style={[styles.calorieUnit, { color: theme.textSecondary }]}>kcal</Text>
-                        </View>
-                        <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
-                        <View style={styles.calorieCol}>
-                            <Text style={[styles.calorieLabel, { color: theme.textSecondary }]}>Goal</Text>
-                            <Text style={[styles.calorieVal, { color: theme.text }]}>{dailyGoal}</Text>
-                            <Text style={[styles.calorieUnit, { color: theme.textSecondary }]}>kcal</Text>
+
+                        <View style={styles.statBox}>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#1A1A1A' }]}>
+                                <Target size={24} color={theme.primary} />
+                            </View>
+                            <Text style={[styles.statVal, { color: '#fff' }]}>{dailyGoal}</Text>
+                            <Text style={[styles.statLab, { color: '#666' }]}>GOAL</Text>
                         </View>
                     </View>
+                    
                     <ProgressBar current={summary.calories} total={dailyGoal} color={theme.primary} />
-                </View>
-
-                {/* ─── Water Tracker ─── */}
-                <View style={[styles.waterCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <View style={styles.waterHeader}>
-                        <Text style={[styles.waterTitle, { color: theme.text }]}>💧 Water Intake</Text>
-                        <Text style={[styles.waterGoalText, { color: theme.primary }]}>
-                            {glassCount}/{GLASS_GOAL} glasses
-                        </Text>
-                    </View>
-                    <GlassRow />
-                    <View style={styles.waterControls}>
-                        <TouchableOpacity
-                            style={[styles.waterCtrlBtn, { backgroundColor: theme.surfaceLight }]}
-                            onPress={() => updateWater(-1)}
-                        >
-                            <Text style={[styles.waterCtrlText, { color: theme.text }]}>−</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.waterCountText, { color: theme.text }]}>
-                            {glassCount} {glassCount === 1 ? 'glass' : 'glasses'}
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.waterCtrlBtn, { backgroundColor: theme.primary }]}
-                            onPress={() => updateWater(1)}
-                        >
-                            <Text style={[styles.waterCtrlText, { color: '#fff' }]}>+</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* ─── Stats Row ─── */}
-                <View style={styles.statsRow}>
-                    <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <Text style={styles.statIcon}>🔥</Text>
-                        <Text style={[styles.statValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
-                        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak</Text>
-                    </View>
-                    <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <Text style={styles.statIcon}>🎯</Text>
-                        <Text style={[styles.statValue, { color: theme.text }]}>{user?.goal || '—'}</Text>
-                        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Goal</Text>
-                    </View>
-                </View>
-
-                {/* ─── Health Tip ─── */}
-                <View style={[styles.tipCard, { backgroundColor: theme.isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderColor: theme.isDarkMode ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe' }]}>
-                    <Text style={[styles.tipTitle, { color: theme.primary }]}>💡 Health Insight</Text>
-                    <Text style={[styles.tipText, { color: theme.text }]}>
-                        {user?.goal === 'Weight Loss'
-                            ? 'Focus on high-protein snacks to maintain muscle mass while in a deficit.'
-                            : user?.goal === 'Muscle Gain'
-                            ? "Ensure you're hitting your surplus target to fuel recovery and growth."
-                            : 'Keep hitting your hydration targets to maintain metabolic efficiency.'}
+                    
+                    <Text style={styles.motivationalText}>
+                        You're doing great! Keep it up. 💚
                     </Text>
                 </View>
 
-                {/* ─── Meal Breakdown ─── */}
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Meal Breakdown</Text>
-                <MealCard title="Breakfast" data={meals.Breakfast} icon="🍳" />
-                <MealCard title="Lunch" data={meals.Lunch} icon="🍛" />
-                <MealCard title="Dinner" data={meals.Dinner} icon="🍽️" />
-                <MealCard title="Snacks" data={meals.Snacks} icon="🍪" />
+                {/* Quick Action Grid */}
+                <View style={styles.actionGrid}>
+                    <TouchableOpacity 
+                        style={[styles.actionBtnFull, { backgroundColor: theme.primary }]}
+                        onPress={() => navigation.navigate('Log Food')}
+                    >
+                        <Image source={require('../assets/nutrition/breakfast.png')} style={styles.actionIconImg} />
+                        <Text style={styles.actionBtnLabel}>Log Food</Text>
+                        <ChevronRight size={24} color="#fff" />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[styles.actionBtnFull, { backgroundColor: '#111', borderColor: '#222', borderWidth: 1 }]}
+                        onPress={() => navigation.navigate('Scan Food')}
+                    >
+                        <View style={styles.scanIconBox}>
+                            <Scan size={24} color={theme.primary} />
+                        </View>
+                        <Text style={[styles.actionBtnLabel, { color: '#fff' }]}>Scan Meal</Text>
+                        <ChevronRight size={24} color="#666" />
+                    </TouchableOpacity>
+                </View>
 
-                <View style={{ height: 120 }} />
+                {/* Water Tracker */}
+                <View style={[styles.waterCard, { backgroundColor: '#111', borderColor: '#222', borderWidth: 1 }]}>
+                    <View style={styles.waterInfo}>
+                        <View style={styles.waterTitleRow}>
+                            <Image source={HYDRATION_ASSETS.main} style={styles.waterIconImg} />
+                            <View>
+                                <Text style={[styles.waterTitle, { color: '#fff' }]}>Hydration</Text>
+                                <Text style={[styles.waterSub, { color: '#666' }]}>Stay refreshed</Text>
+                            </View>
+                        </View>
+                        <Text style={[styles.waterValue, { color: theme.primary }]}>{glassCount}/{GLASS_GOAL}</Text>
+                    </View>
+                    <View style={styles.waterControls}>
+                        <TouchableOpacity style={[styles.waterBtnNew, { backgroundColor: '#1A1A1A' }]} onPress={() => updateWater(-1)}>
+                            <Minus size={20} color="#666" />
+                        </TouchableOpacity>
+                        
+                        <View style={styles.glassRow}>
+                            {[...Array(GLASS_GOAL)].map((_, i) => (
+                                <View 
+                                    key={i} 
+                                    style={[
+                                        styles.glassIndicator, 
+                                        { backgroundColor: i < glassCount ? theme.primary : '#222' }
+                                    ]} 
+                                />
+                            ))}
+                        </View>
+
+                        <TouchableOpacity style={[styles.waterBtnNew, { backgroundColor: theme.primary }]} onPress={() => updateWater(1)}>
+                            <Plus size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Meals */}
+                <Text style={[styles.sectionTitle, { color: '#fff' }]}>Today's Nutrition</Text>
+                <MealCard title="Breakfast" data={meals.Breakfast} type="breakfast" />
+                <MealCard title="Lunch" data={meals.Lunch} type="lunch" />
+                <MealCard title="Dinner" data={meals.Dinner} type="dinner" />
+                <MealCard title="Snacks" data={meals.Snacks} type="snacks" />
+
+                <View style={{ height: 100 }} />
             </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingHorizontal: SPACING.xl },
-    loader: { flex: 1, justifyContent: 'center' },
-    topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md, marginBottom: SPACING.xl },
-    greeting: { fontSize: FONT.xxl, fontWeight: FONT.black },
-    dateText: { fontSize: FONT.sm, marginTop: SPACING.xs },
-    avatarBtn: {
-        width: 44, height: 44, borderRadius: 22,
-        justifyContent: 'center', alignItems: 'center',
-    },
-    avatarText: { color: '#fff', fontSize: FONT.lg, fontWeight: FONT.bold },
-    quickRow: { flexDirection: 'row', marginBottom: SPACING.xl },
-    quickBtn: {
-        flex: 1, marginRight: SPACING.md,
-        paddingVertical: SPACING.lg, borderRadius: RADIUS.lg,
-        alignItems: 'center', borderWidth: 1,
-    },
-    quickIcon: { fontSize: 22, marginBottom: SPACING.xs },
-    quickLabel: { fontSize: FONT.sm, fontWeight: '600' },
-    calorieCard: {
-        padding: SPACING.xl, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.lg, borderWidth: 1,
-    },
-    calorieRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
-    calorieCol: { alignItems: 'center', flex: 1 },
-    calorieLabel: { fontSize: FONT.xs, fontWeight: '500', marginBottom: SPACING.xs },
-    calorieVal: { fontSize: FONT.xxl, fontWeight: '900' },
-    calorieUnit: { fontSize: FONT.xs },
-    calorieDivider: { height: 30, width: 1 },
-    progressBarBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
+    container: { flex: 1 },
+    scrollContent: { paddingHorizontal: SPACING.xl, paddingBottom: 40 },
+    loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: SPACING.lg },
+    greeting: { fontSize: 28, fontWeight: '900' },
+    dateText: { fontSize: 14, fontWeight: '600' },
+    avatarContainer: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, overflow: 'hidden' },
+    avatar: { width: '100%', height: '100%' },
+    avatarPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+    avatarInitial: { fontSize: 20, fontWeight: 'bold' },
+
+    summaryCard: { padding: SPACING.xl, borderRadius: RADIUS.xxl, borderWidth: 1, marginBottom: SPACING.xl },
+    calorieStats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.xl },
+    statBox: { alignItems: 'center', flex: 1 },
+    statIconContainer: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    statVal: { fontSize: 20, fontWeight: '900', marginBottom: 2 },
+    statLab: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
+    kcalStatIcon: { width: 30, height: 30 },
+    
+    ringContainer: { width: 160, height: 160, justifyContent: 'center', alignItems: 'center' },
+    ringCenterText: { position: 'absolute', alignItems: 'center' },
+    ringLabel: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 2 },
+    remainingVal: { fontSize: 32, fontWeight: '900' },
+    remainingLab: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+    goalSubText: { fontSize: 10, fontWeight: '600' },
+
+    progressBarBg: { height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 12 },
     progressBarFill: { height: '100%', borderRadius: 3 },
-    waterCard: {
-        padding: SPACING.xl, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.lg, borderWidth: 1,
+    motivationalText: { fontSize: 13, color: '#666', textAlign: 'center', fontWeight: '600' },
+
+    actionGrid: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xl },
+    actionBtnFull: { 
+        flex: 1, height: 70, borderRadius: RADIUS.xl, 
+        flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 
     },
-    waterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
-    waterTitle: { fontSize: FONT.lg, fontWeight: 'bold' },
-    waterGoalText: { fontSize: FONT.sm, fontWeight: '600' },
-    glassRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: SPACING.md },
-    glassIcon: { fontSize: 28, marginHorizontal: SPACING.xs, marginVertical: SPACING.xs, opacity: 0.25 },
-    glassIconActive: { opacity: 1 },
-    waterControls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-    waterCtrlBtn: {
-        width: 44, height: 44, borderRadius: 22,
-        justifyContent: 'center', alignItems: 'center',
-        ...SHADOW.sm,
-    },
-    waterCtrlText: { fontSize: 22, fontWeight: 'bold', lineHeight: 24 },
-    waterCountText: { fontSize: FONT.lg, fontWeight: '600', marginHorizontal: SPACING.xl },
-    statsRow: { flexDirection: 'row', marginBottom: SPACING.lg },
-    statBox: {
-        flex: 1, marginRight: SPACING.md,
-        padding: SPACING.lg, borderRadius: RADIUS.xl, alignItems: 'center',
-        borderWidth: 1,
-    },
-    statIcon: { fontSize: 24, marginBottom: SPACING.sm },
-    statValue: { fontSize: FONT.lg, fontWeight: 'bold' },
-    statLabel: { fontSize: FONT.xs, marginTop: SPACING.xs },
-    tipCard: {
-        padding: SPACING.lg, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.xl, borderWidth: 1,
-    },
-    tipTitle: { fontWeight: 'bold', fontSize: FONT.sm, marginBottom: SPACING.sm },
-    tipText: { fontSize: FONT.sm, lineHeight: 20 },
-    sectionTitle: { fontSize: FONT.xl, fontWeight: 'bold', marginBottom: SPACING.lg },
-    mealCard: {
-        padding: SPACING.lg, borderRadius: RADIUS.xl,
-        marginBottom: SPACING.md, borderWidth: 1,
-    },
-    mealHeader: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingBottom: SPACING.md, borderBottomWidth: 1, marginBottom: SPACING.md,
-    },
-    mealIcon: { fontSize: 18, marginRight: SPACING.sm },
-    mealTitle: { fontSize: FONT.md, fontWeight: '600' },
-    mealKcal: { fontSize: FONT.sm, marginLeft: SPACING.sm },
-    mealAddBtn: {
-        width: 30, height: 30,
-        borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center',
-    },
-    mealAddText: { fontSize: 20, fontWeight: 'bold', lineHeight: 22 },
-    emptyText: { textAlign: 'center', fontStyle: 'italic', fontSize: FONT.sm, paddingVertical: SPACING.sm },
-    foodRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: SPACING.sm },
-    foodName: { fontSize: FONT.md },
-    foodCal: { fontSize: FONT.sm },
+    actionIconImg: { width: 36, height: 36, marginRight: 10 },
+    scanIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+    actionBtnLabel: { fontSize: 16, fontWeight: 'bold', color: '#fff', flex: 1 },
+
+    waterCard: { padding: SPACING.xl, borderRadius: RADIUS.xxl, marginBottom: SPACING.xl },
+    waterInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
+    waterTitleRow: { flexDirection: 'row', alignItems: 'center' },
+    waterIconImg: { width: 60, height: 60, marginRight: 15 },
+    waterTitle: { fontSize: 18, fontWeight: '800' },
+    waterSub: { fontSize: 12, fontWeight: '500' },
+    waterValue: { fontSize: 24, fontWeight: '900' },
+    waterControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    waterBtnNew: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    glassRow: { flexDirection: 'row', gap: 6, flex: 1, justifyContent: 'center' },
+    glassIndicator: { width: 8, height: 8, borderRadius: 4 },
+
+    sectionTitle: { fontSize: 22, fontWeight: '900', marginBottom: SPACING.lg },
+    mealCard: { padding: SPACING.lg, borderRadius: RADIUS.xl, borderWidth: 1, marginBottom: SPACING.md },
+    mealHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: SPACING.sm, borderBottomWidth: 1, marginBottom: SPACING.md },
+    mealTitleRow: { flexDirection: 'row', alignItems: 'center' },
+    mealIconImg: { width: 24, height: 24, marginRight: 12 },
+    mealTitle: { fontSize: 17, fontWeight: '800' },
+    mealKcal: { fontSize: 14, fontWeight: 'bold' },
+    foodRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    foodName: { fontSize: 15, fontWeight: '500' },
+    foodCal: { fontSize: 13 },
+    emptyText: { fontSize: 13, fontStyle: 'italic', textAlign: 'center', paddingVertical: 4 },
 });

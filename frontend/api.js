@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // IMPORTANT: This MUST match your laptop's WiFi IP.
 // Run `ipconfig` in terminal → look for "Wireless LAN adapter Wi-Fi" → IPv4 Address
 // Current WiFi IP: 192.168.1.11
-export const API_URL = "http://192.168.1.11:5000/api";
+export const API_URL = "http://192.168.31.167:5000/api";
 
 console.log("╔══════════════════════════════════════╗");
 console.log("║ VitalIQ API:", API_URL);

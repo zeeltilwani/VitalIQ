@@ -3,6 +3,25 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../middleware/authMiddleware');
 const { calculateBMR, calculateTDEE } = require('../utils/health');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = 'uploads/';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'avatar-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 router.use(authenticateToken);
 
@@ -12,7 +31,7 @@ router.get('/profile', async (req, res) => {
         const userId = req.user.id;
         const result = await db.query(
             `SELECT id, name, email, role, daily_calorie_goal, current_streak, 
-             is_onboarded, bmr, tdee, dob, pincode, city, state, height, weight, target_weight, gender, goal
+             is_onboarded, bmr, tdee, dob, pincode, city, state, height, weight, target_weight, gender, goal, profile_picture_url
              FROM users WHERE id = $1`,
             [userId]
         );
@@ -21,6 +40,26 @@ router.get('/profile', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error fetching profile' });
+    }
+});
+
+// --- Update Profile ---
+router.put('/profile', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name } = req.body;
+
+        if (!name) return res.status(400).json({ error: 'Name is required' });
+
+        await db.query(
+            'UPDATE users SET name = $1 WHERE id = $2',
+            [name, userId]
+        );
+
+        res.json({ message: 'Profile updated', name });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error updating profile' });
     }
 });
 
@@ -81,6 +120,28 @@ router.post('/onboarding', async (req, res) => {
     } catch (err) {
         console.error('Onboarding Error:', err);
         res.status(500).json({ error: 'Internal server error saving profile.' });
+    }
+});
+
+// --- Update Profile Picture ---
+router.post('/avatar', upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image provided' });
+        }
+
+        const userId = req.user.id;
+        const imageUrl = `/uploads/${req.file.filename}`;
+
+        await db.query(
+            'UPDATE users SET profile_picture_url = $1 WHERE id = $2',
+            [imageUrl, userId]
+        );
+
+        res.json({ message: 'Avatar updated', imageUrl });
+    } catch (err) {
+        console.error('Avatar Upload Error:', err);
+        res.status(500).json({ error: 'Failed to upload avatar' });
     }
 });
 

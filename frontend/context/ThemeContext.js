@@ -7,7 +7,6 @@ export const ThemeProvider = ({ children }) => {
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [currentUserId, setCurrentUserId] = useState(null);
 
-    // Part 1: Persist per-user theme using AsyncStorage (key: userId_theme)
     const getStorageKey = (userId) => `${userId || 'guest'}_theme`;
 
     const loadTheme = async (userId) => {
@@ -43,50 +42,44 @@ export const ThemeProvider = ({ children }) => {
 
     const theme = {
         // ─── Backgrounds ───
-        bg:           isDarkMode ? '#0D1B2A'  : '#E3F2FD',  // dark: navy blue  | light: sky blue
-        surface:      isDarkMode ? '#1B263B'  : '#FCE4EC',  // dark: dark card  | light: baby pink
-        surfaceLight: isDarkMode ? '#243447'  : '#F3E5F5',  // dark: elevated   | light: soft lavender
-        
+        bg:           isDarkMode ? '#000000'  : '#F8F5F0',   // pitch black | soft beige
+        surface:      isDarkMode ? '#111111'  : '#FFFFFF',   // near-black card | pure white
+        surfaceLight: isDarkMode ? '#1A1A1A'  : '#F0EDE8',   // elevated surface | muted beige
+
         // ─── Text ───
-        text:          isDarkMode ? '#E8EDF2' : '#1A237E',  // dark: off-white  | light: deep indigo
-        textSecondary: isDarkMode ? '#8899AA' : '#546E7A',  // dark: muted blue-grey | light: blue-grey
+        text:          isDarkMode ? '#F5F5F5' : '#1A1A1A',   // off-white | near-black
+        textSecondary: isDarkMode ? '#888888' : '#6B7280',   // muted grey both modes
         textInverse:   '#FFFFFF',
-        
+
         // ─── Borders ───
-        border: isDarkMode ? '#2C3E50' : '#B0BEC5',
-        
-        // ─── Brand colors ───
-        primary:      isDarkMode ? '#4CAF50' : '#64B5F6',   // dark: green | light: sky blue
-        primaryLight: isDarkMode ? 'rgba(76,175,80,0.15)'  : 'rgba(100,181,246,0.2)',
-        primaryDark:  isDarkMode ? '#388E3C' : '#1E88E5',
-        accent:       isDarkMode ? '#FF9800' : '#F57C00',   // orange (both modes)
-        accentLight:  isDarkMode ? 'rgba(255,152,0,0.15)'  : 'rgba(245,124,0,0.15)',
-        
+        border: isDarkMode ? '#222222' : '#E5E0D9',
+
+        // ─── Brand Colors (Green per spec) ───
+        primary:      '#22C55E',                              // VitalIQ Green
+        primaryLight: isDarkMode ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)',
+        primaryDark:  '#16A34A',
+        // Gradient tokens (for use with LinearGradient if added)
+        primaryGradient: ['#22C55E', '#16A34A'],
+
+        // ─── Accent ───
+        accent:       isDarkMode ? '#F59E0B' : '#D97706',    // amber
+        accentLight:  isDarkMode ? 'rgba(245,158,11,0.15)' : 'rgba(217,119,6,0.15)',
+
         // ─── Semantic ───
-        success: isDarkMode ? '#4CAF50' : '#388E3C',
-        danger:  '#EF5350',
-        dangerLight: 'rgba(239,83,80,0.15)',
-        warning: isDarkMode ? '#FF9800' : '#EF6C00',
-        info:    isDarkMode ? '#42A5F5' : '#1565C0',
-        infoLight: isDarkMode ? 'rgba(66,165,245,0.15)' : 'rgba(21,101,192,0.12)',
-        
-        // ─── Aesthetics (Part 9) ───
-        shadow: isDarkMode ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.1)',
-        radius: {
-            sm: 8,
-            md: 12,
-            lg: 16,
-            xl: 24,
-            pill: 999
-        },
-        spacing: {
-            xs: 4,
-            sm: 8,
-            md: 16,
-            lg: 24,
-            xl: 32,
-            xxl: 48
-        },
+        success:      '#22C55E',
+        danger:       '#EF4444',
+        dangerLight:  'rgba(239,68,68,0.15)',
+        warning:      isDarkMode ? '#F59E0B' : '#D97706',
+        info:         isDarkMode ? '#60A5FA' : '#2563EB',
+        infoLight:    isDarkMode ? 'rgba(96,165,250,0.15)' : 'rgba(37,99,235,0.1)',
+
+        // ─── Aesthetics ───
+        shadow: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.08)',
+
+        // ─── Spacing / Radius (convenience) ───
+        radius: { sm: 8, md: 12, lg: 16, xl: 24, pill: 999 },
+        spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 },
+
         isDarkMode,
     };
 

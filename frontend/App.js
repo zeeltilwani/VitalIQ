@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StatusBar } from 'react-native';
+import { View, Text, StatusBar, StyleSheet } from 'react-native';
+import { Home, Salad, Dumbbell, User, ClipboardList } from 'lucide-react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -24,6 +25,9 @@ import AnalyticsScreen from './screens/AnalyticsScreen';
 // Workout module (merged — single tab)
 import WorkoutScreen from './screens/WorkoutScreen';
 import ExerciseListScreen from './screens/ExerciseListScreen';
+import ExerciseIntroScreen from './screens/ExerciseIntroScreen';
+import ExerciseTimerScreen from './screens/ExerciseTimerScreen';
+import RestScreen from './screens/RestScreen';
 import WorkoutModeScreen from './screens/WorkoutModeScreen';
 
 // Global Components
@@ -47,12 +51,12 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <View style={{ flex: 1, backgroundColor: '#0D1B2A', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-                    <Text style={{ color: '#EF5350', fontSize: 24, fontWeight: 'bold', marginBottom: 15 }}>⚠️ App Error</Text>
-                    <Text style={{ color: '#E8EDF2', fontSize: 16, textAlign: 'center', marginBottom: 30 }}>
+                <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+                    <Text style={{ color: '#EF4444', fontSize: 24, fontWeight: 'bold', marginBottom: 15 }}>⚠️ App Error</Text>
+                    <Text style={{ color: '#F5F5F5', fontSize: 16, textAlign: 'center', marginBottom: 30 }}>
                         Something went wrong. Please restart the app.
                     </Text>
-                    <Text style={{ color: '#8899AA', fontSize: 12, textAlign: 'center' }}>
+                    <Text style={{ color: '#888888', fontSize: 12, textAlign: 'center' }}>
                         {this.state.error?.toString()}
                     </Text>
                 </View>
@@ -63,16 +67,41 @@ class ErrorBoundary extends React.Component {
 }
 
 function TabIcon({ name, focused, theme }) {
-    let icon = '';
-    if (name === 'Home') icon = '🏠';
-    else if (name === 'Diet Plans') icon = '🥗';
-    else if (name === 'Workout') icon = '🏋️';
-    else if (name === 'Profile') icon = '👤';
-    return (
-        <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.7, color: focused ? theme.primary : theme.textSecondary }}>
-            {icon}
-        </Text>
-    );
+    const size = 24;
+    const color = focused ? theme.primary : theme.textSecondary;
+    const strokeWidth = focused ? 2.5 : 2;
+
+    if (name === 'Home') {
+        return (
+            <View style={styles.iconWrapper}>
+                <Home size={size} color={color} strokeWidth={strokeWidth} />
+                {focused && <View style={[styles.homeIndicator, { backgroundColor: theme.primary }]} />}
+            </View>
+        );
+    }
+    if (name === 'Diet Plans') {
+        return (
+            <View style={styles.iconWrapper}>
+                <ClipboardList size={size} color={color} strokeWidth={strokeWidth} />
+            </View>
+        );
+    }
+    if (name === 'Workout') {
+        return (
+            <View style={styles.iconWrapper}>
+                <Dumbbell size={size} color={color} strokeWidth={strokeWidth} />
+            </View>
+        );
+    }
+    if (name === 'Profile') {
+        return (
+            <View style={styles.iconWrapper}>
+                <User size={size} color={color} strokeWidth={strokeWidth} />
+                {focused && <View style={[styles.profileIndicator, { borderColor: theme.primary }]} />}
+            </View>
+        );
+    }
+    return null;
 }
 
 function MainAppTabs({ route }) {
@@ -173,6 +202,9 @@ function AppContent() {
 
                     {/* Workout Flow */}
                     <Stack.Screen name="ExerciseList" component={ExerciseListScreen} />
+                    <Stack.Screen name="ExerciseIntro" component={ExerciseIntroScreen} />
+                    <Stack.Screen name="ExerciseTimer" component={ExerciseTimerScreen} />
+                    <Stack.Screen name="RestScreen" component={RestScreen} />
                     <Stack.Screen name="WorkoutMode" component={WorkoutModeScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
@@ -180,6 +212,32 @@ function AppContent() {
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    iconWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 30,
+        height: 30,
+    },
+    homeIndicator: {
+        position: 'absolute',
+        bottom: 4,
+        width: 4,
+        height: 2,
+        borderRadius: 1,
+    },
+    profileIndicator: {
+        position: 'absolute',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        borderWidth: 2,
+        borderLeftColor: 'transparent',
+        borderBottomColor: 'transparent',
+        transform: [{ rotate: '45deg' }],
+    },
+});
 
 export default function App() {
     return (

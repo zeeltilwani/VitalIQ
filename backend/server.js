@@ -17,6 +17,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use('/diet-pdfs', express.static('assets/diet-plans'));
+app.use('/uploads', express.static('uploads'));
 
 // Global request logger — fires on EVERY request
 app.use((req, res, next) => {

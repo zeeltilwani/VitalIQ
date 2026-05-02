@@ -26,15 +26,19 @@ router.post('/food', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Food name is required' });
         }
 
-        // Part 3: Food Validation & Fuzzy Matching
-        const calorieResult = estimateCalories(foodName);
-        if (calorieResult && typeof calorieResult === 'object' && calorieResult.error) {
-            // DO NOT log if food not recognized
-            console.log(`[Logs] Blocked logging of unrecognized food: "${foodName}"`);
-            return res.status(400).json({ success: false, error: "Food not recognized in our database. Please try a different name." });
+        // Part 3: Food Validation & Calorie Resolution
+        let calories = req.body.calories;
+        
+        if (calories === undefined || calories === null) {
+            const calorieResult = estimateCalories(foodName);
+            if (calorieResult && typeof calorieResult === 'object' && calorieResult.error) {
+                // DO NOT log if food not recognized and no calories provided
+                console.log(`[Logs] Blocked logging of unrecognized food: "${foodName}"`);
+                return res.status(400).json({ success: false, error: "Food not recognized in our database. Please try a different name." });
+            }
+            calories = typeof calorieResult === 'number' ? calorieResult : 0;
         }
 
-        let calories = typeof calorieResult === 'number' ? calorieResult : 0;
         if (portionMultiplier !== 1) {
             calories = Math.round(calories * portionMultiplier);
         }
@@ -48,42 +52,26 @@ router.post('/food', async (req, res) => {
             [finalUserId, foodName.trim(), calories, standardizedMeal, imageUrl || null, date]
         );
 
-        // --- Part 8: Streak Fix ---
-        // Logic: Compare current date with last_logged_date in the database.
-        // If today is last_logged_date, keep streak.
-        // If today is exactly one day after last_logged_date, increment.
-        // Otherwise, reset to 1.
+        // --- Part 8: Atomic Streak Fix ---
+        // Using Postgres to atomically evaluate the streak to prevent race conditions and JS timezone bugs.
+        const streakUpdateQuery = `
+            UPDATE users 
+            SET 
+              current_streak = CASE 
+                  WHEN last_logged_date IS NULL THEN 1
+                  WHEN last_logged_date = CURRENT_DATE THEN COALESCE(current_streak, 1)
+                  WHEN last_logged_date = CURRENT_DATE - INTERVAL '1 day' THEN COALESCE(current_streak, 0) + 1 
+                  ELSE 1 
+              END,
+              last_logged_date = CURRENT_DATE
+            WHERE id = $1
+            RETURNING current_streak, last_logged_date
+        `;
         
-        const userRes = await db.query('SELECT last_logged_date, current_streak FROM users WHERE id = $1', [finalUserId]);
-        const userData = userRes.rows[0];
-        
-        let newStreak = 1;
-        const todayStr = new Date().toISOString().split('T')[0];
-        
-        if (userData.last_logged_date) {
-            const lastDate = new Date(userData.last_logged_date).toISOString().split('T')[0];
-            
-            if (lastDate === todayStr) {
-                newStreak = userData.current_streak || 1;
-            } else {
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = yesterday.toISOString().split('T')[0];
-                
-                if (lastDate === yesterdayStr) {
-                    newStreak = (userData.current_streak || 0) + 1;
-                } else {
-                    newStreak = 1;
-                }
-            }
-        }
+        const streakRes = await db.query(streakUpdateQuery, [finalUserId]);
+        const newStreak = streakRes.rows[0].current_streak;
 
-        await db.query(
-            'UPDATE users SET current_streak = $1, last_logged_date = $2 WHERE id = $3',
-            [newStreak, todayStr, finalUserId]
-        );
-
-        console.log(`🔥 Streak for user ${finalUserId}: ${newStreak} (Last: ${userData.last_logged_date})`);
+        console.log(`🔥 Streak for user ${finalUserId}: ${newStreak} (Last: ${streakRes.rows[0].last_logged_date})`);
 
         res.status(201).json({
             success: true,

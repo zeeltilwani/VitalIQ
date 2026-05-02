@@ -1,24 +1,36 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions
+    Dimensions, Animated, Image
 } from 'react-native';
+import { 
+    Flame, 
+    Dumbbell, 
+    Activity, 
+    Target, 
+    Trophy, 
+    ChevronRight,
+    CircleDashed,
+    CheckCircle2
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { getExerciseAsset } from '../assets/exercises';
 
 const { width } = Dimensions.get('window');
 
 // ─── REAL EXERCISE DATABASE ───
 const EXERCISE_DATA = {
     'Belly Fat': [
-        { id: 'bf1', name: 'Mountain Climbers', sets: 3, reps: '30 sec', emoji: '🏔️', description: 'Start in plank position. Drive knees alternately toward chest as fast as possible. Keep core tight and hips level.' },
-        { id: 'bf2', name: 'Bicycle Crunches', sets: 3, reps: '20 each side', emoji: '🚴', description: 'Lie on back, hands behind head. Bring opposite elbow to knee while extending the other leg. Alternate sides smoothly.' },
-        { id: 'bf3', name: 'Plank Hold', sets: 3, reps: '45 sec', emoji: '🧘', description: 'Hold a forearm plank with body in a straight line. Engage your core and glutes. Don\'t let hips sag or pike up.' },
-        { id: 'bf4', name: 'Russian Twists', sets: 3, reps: '20 total', emoji: '🔄', description: 'Sit with knees bent, lean back slightly. Rotate torso side to side, tapping the floor. Hold a weight for extra challenge.' },
-        { id: 'bf5', name: 'Burpees', sets: 3, reps: '10', emoji: '💥', description: 'From standing, drop to push-up position, do a push-up, jump feet to hands, and explosively jump up with arms overhead.' },
-        { id: 'bf6', name: 'Flutter Kicks', sets: 3, reps: '30 sec', emoji: '🦵', description: 'Lie on back, hands under glutes. Lift legs slightly off ground and alternate small kicks. Keep lower back pressed down.' },
+        { id: 'bf1', name: 'Mountain Climbers', sets: 3, reps: '30 sec', gifName: 'mountain_climbers', description: 'Start in plank position. Drive knees alternately toward chest as fast as possible. Keep core tight and hips level.' },
+        { id: 'bf2', name: 'Bicycle Crunches', sets: 3, reps: '20 each side', gifName: 'bicycle_crunches', description: 'Lie on back, hands behind head. Bring opposite elbow to knee while extending the other leg. Alternate sides smoothly.' },
+        { id: 'bf3', name: 'Plank Hold', sets: 3, reps: '45 sec', gifName: 'plank', description: 'Hold a forearm plank with body in a straight line. Engage your core and glutes. Don\'t let hips sag or pike up.' },
+        { id: 'bf4', name: 'Russian Twists', sets: 3, reps: '20 total', gifName: 'russian_twists', description: 'Sit with knees bent, lean back slightly. Rotate torso side to side, tapping the floor. Hold a weight for extra challenge.' },
+        { id: 'bf5', name: 'Burpees', sets: 3, reps: '10', gifName: 'burpees', description: 'From standing, drop to push-up position, do a push-up, jump feet to hands, and explosively jump up with arms overhead.' },
+        { id: 'bf6', name: 'Flutter Kicks', sets: 3, reps: '30 sec', gifName: 'leg_raises', description: 'Lie on back, hands under glutes. Lift legs slightly off ground and alternate small kicks. Keep lower back pressed down.' },
     ],
-    'Glutes': [
+    'Legs': [
         { id: 'gl1', name: 'Hip Thrusts', sets: 4, reps: '12', emoji: '🍑', description: 'Sit with upper back against a bench. Drive hips upward squeezing glutes at top. Pause for 2 seconds, lower controlled.' },
         { id: 'gl2', name: 'Bulgarian Split Squats', sets: 3, reps: '10 each leg', emoji: '🦵', description: 'Place rear foot on bench. Lower until front thigh is parallel to ground. Push through front heel to stand back up.' },
         { id: 'gl3', name: 'Glute Bridges', sets: 3, reps: '15', emoji: '🌉', description: 'Lie on back, knees bent, feet flat. Drive hips up, squeezing glutes at top. Hold for 1 second then lower slowly.' },
@@ -53,15 +65,16 @@ const EXERCISE_DATA = {
 };
 
 const CATEGORIES = [
-    { key: 'Belly Fat', emoji: '🔥', color: '#ef4444' },
-    { key: 'Glutes', emoji: '🍑', color: '#f59e0b' },
-    { key: 'Chest', emoji: '💪', color: '#3b82f6' },
-    { key: 'Arms', emoji: '🦾', color: '#8b5cf6' },
-    { key: 'Full Body', emoji: '🏋️', color: COLORS.primary },
+    { key: 'Belly Fat', icon: Flame, color: '#ef4444', image: 'cat_belly' },
+    { key: 'Chest', icon: Dumbbell, color: '#3b82f6', image: 'cat_chest' },
+    { key: 'Arms', icon: Activity, color: '#8b5cf6', image: 'cat_arms' },
+    { key: 'Legs', icon: Target, color: '#f59e0b', image: 'cat_legs' },
+    { key: 'Full Body', icon: Trophy, color: 'primary', image: 'cat_fullbody' },
 ];
 
 export default function ExerciseScreen() {
     const insets = useSafeAreaInsets();
+    const { theme } = useTheme();
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [completedExercises, setCompletedExercises] = useState({});
     const [workoutStarted, setWorkoutStarted] = useState(false);
@@ -78,22 +91,45 @@ export default function ExerciseScreen() {
 
     const renderCategoryCard = ({ item }) => {
         const isSelected = selectedCategory === item.key;
+        const itemColor = item.color === 'primary' ? theme.primary : item.color;
+        const Icon = item.icon;
+        const scale = new Animated.Value(1);
+
+        const onPressIn = () => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
+        const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+
         return (
             <TouchableOpacity
-                style={[
-                    styles.catCard,
-                    isSelected && { borderColor: item.color, borderWidth: 2 },
-                ]}
+                activeOpacity={1}
+                onPressIn={onPressIn}
+                onPressOut={onPressOut}
                 onPress={() => {
                     setSelectedCategory(item.key);
                     setWorkoutStarted(false);
                     setCompletedExercises({});
                 }}
-                activeOpacity={0.7}
             >
-                <Text style={styles.catEmoji}>{item.emoji}</Text>
-                <Text style={styles.catLabel}>{item.key}</Text>
-                <Text style={styles.catCount}>{EXERCISE_DATA[item.key].length} exercises</Text>
+                <Animated.View
+                    style={[
+                        styles.catCard,
+                        { backgroundColor: theme.surface, borderColor: theme.border, transform: [{ scale }] },
+                        isSelected && { borderColor: itemColor, borderWidth: 2 },
+                    ]}
+                >
+                    <View style={[styles.categoryIcon, { backgroundColor: isSelected ? '#fff' : theme.surfaceLight }]}>
+                        {item.image ? (
+                            <Image 
+                                source={getExerciseAsset(item.image)} 
+                                style={{ width: 24, height: 24 }} 
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Icon size={24} color={isSelected ? itemColor : theme.textSecondary} />
+                        )}
+                    </View>
+                    <Text style={[styles.catLabel, { color: theme.text }]}>{item.key}</Text>
+                    <Text style={[styles.catCount, { color: theme.textSecondary }]}>{EXERCISE_DATA[item.key].length} exercises</Text>
+                </Animated.View>
             </TouchableOpacity>
         );
     };
@@ -102,39 +138,58 @@ export default function ExerciseScreen() {
         const isDone = completedExercises[item.id];
         return (
             <TouchableOpacity
-                style={[styles.exerciseCard, isDone && styles.exerciseCardDone]}
+                style={[
+                    styles.exerciseCard,
+                    { backgroundColor: theme.surface, borderColor: theme.border },
+                    isDone && { borderColor: theme.primary, backgroundColor: theme.primary + '15' }
+                ]}
                 onPress={() => workoutStarted && toggleComplete(item.id)}
                 activeOpacity={workoutStarted ? 0.7 : 1}
             >
                 <View style={styles.exerciseLeft}>
-                    <View style={[styles.exerciseNumber, isDone && { backgroundColor: COLORS.primary }]}>
-                        <Text style={styles.exerciseNumberText}>
-                            {isDone ? '✓' : index + 1}
-                        </Text>
+                    <View style={[
+                        styles.exerciseNumber, 
+                        { borderColor: theme.border, borderWidth: 1.5 }, 
+                        isDone && { backgroundColor: theme.primary, borderColor: theme.primary }
+                    ]}>
+                        {isDone ? (
+                            <CheckCircle2 size={16} color="#fff" />
+                        ) : (
+                            item.gifName && getExerciseAsset(item.gifName) !== getExerciseAsset('default') ? (
+                                <Image 
+                                    source={getExerciseAsset(item.gifName)} 
+                                    style={{ width: 24, height: 24, borderRadius: 12 }} 
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <Text style={[styles.exerciseNumberText, { color: theme.text }]}>{index + 1}</Text>
+                            )
+                        )}
                     </View>
                     <View style={styles.exerciseInfo}>
-                        <Text style={[styles.exerciseName, isDone && styles.exerciseNameDone]}>
-                            {item.emoji} {item.name}
+                        <Text style={[styles.exerciseName, { color: theme.text }, isDone && { textDecorationLine: 'line-through', color: theme.textSecondary }]}>
+                            {item.name}
                         </Text>
-                        <Text style={styles.exerciseMeta}>
+                        <Text style={[styles.exerciseMeta, { color: theme.primary }]}>
                             {item.sets} sets × {item.reps}
                         </Text>
-                        <Text style={styles.exerciseDesc} numberOfLines={2}>
+                        <Text style={[styles.exerciseDesc, { color: theme.textSecondary }]} numberOfLines={2}>
                             {item.description}
                         </Text>
                     </View>
+                    <ChevronRight size={18} color={theme.textSecondary} />
                 </View>
             </TouchableOpacity>
         );
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Exercises</Text>
-                    <Text style={styles.headerSub}>Select a target area to begin</Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>Exercises</Text>
+                    <Text style={[styles.headerSub, { color: theme.textSecondary }]}>Select a target area to begin</Text>
                 </View>
 
                 {/* Categories */}
@@ -154,9 +209,9 @@ export default function ExerciseScreen() {
                 {selectedCategory ? (
                     <View style={styles.exerciseSection}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>{selectedCategory}</Text>
+                            <Text style={[styles.sectionTitle, { color: theme.text }]}>{selectedCategory}</Text>
                             {workoutStarted && (
-                                <Text style={styles.progressText}>
+                                <Text style={[styles.progressText, { color: theme.primary }]}>
                                     {completedCount}/{totalCount} done
                                 </Text>
                             )}
@@ -164,8 +219,8 @@ export default function ExerciseScreen() {
 
                         {/* Progress Bar */}
                         {workoutStarted && (
-                            <View style={styles.progressBarContainer}>
-                                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+                            <View style={[styles.progressBarContainer, { backgroundColor: theme.surface }]}>
+                                <View style={[styles.progressBarFill, { width: `${progress * 100}%`, backgroundColor: theme.primary }]} />
                             </View>
                         )}
 
@@ -178,37 +233,40 @@ export default function ExerciseScreen() {
                         {/* Action Button */}
                         {!workoutStarted ? (
                             <TouchableOpacity
-                                style={styles.startBtn}
+                                style={[styles.startBtn, { backgroundColor: theme.primary }]}
                                 onPress={() => setWorkoutStarted(true)}
                             >
-                                <Text style={styles.startBtnText}>🏁 Start Workout</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Trophy size={20} color={theme.textInverse} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.startBtnText, { color: theme.textInverse }]}>Start Workout</Text>
+                                </View>
                             </TouchableOpacity>
                         ) : completedCount === totalCount && totalCount > 0 ? (
-                            <View style={styles.doneCard}>
-                                <Text style={styles.doneEmoji}>🎉</Text>
-                                <Text style={styles.doneTitle}>Workout Complete!</Text>
-                                <Text style={styles.doneText}>
+                            <View style={[styles.doneCard, { backgroundColor: theme.primary + '15' }]}>
+                                <Trophy size={48} color={theme.primary} style={{ marginBottom: 16 }} />
+                                <Text style={[styles.doneTitle, { color: theme.primary }]}>Workout Complete!</Text>
+                                <Text style={[styles.doneText, { color: theme.textSecondary }]}>
                                     You finished all {totalCount} exercises. Great job!
                                 </Text>
                                 <TouchableOpacity
-                                    style={styles.resetBtn}
+                                    style={[styles.resetBtn, { backgroundColor: theme.primary }]}
                                     onPress={() => {
                                         setWorkoutStarted(false);
                                         setCompletedExercises({});
                                     }}
                                 >
-                                    <Text style={styles.resetBtnText}>Start Over</Text>
+                                    <Text style={[styles.resetBtnText, { color: theme.textInverse }]}>Start Over</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
-                            <Text style={styles.tapHint}>Tap an exercise to mark it complete</Text>
+                            <Text style={[styles.tapHint, { color: theme.textSecondary }]}>Tap an exercise to mark it complete</Text>
                         )}
                     </View>
                 ) : (
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyEmoji}>👆</Text>
-                        <Text style={styles.emptyTitle}>Choose a Target Area</Text>
-                        <Text style={styles.emptyText}>
+                        <Activity size={48} color={theme.textSecondary} style={{ marginBottom: 16 }} />
+                        <Text style={[styles.emptyTitle, { color: theme.text }]}>Choose a Target Area</Text>
+                        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
                             Select a body part above to see exercises with sets, reps, and descriptions.
                         </Text>
                     </View>
@@ -221,14 +279,13 @@ export default function ExerciseScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
+    container: { flex: 1 },
     header: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, paddingBottom: SPACING.lg },
-    headerTitle: { fontSize: FONT.title, fontWeight: FONT.black, color: COLORS.text },
-    headerSub: { fontSize: FONT.sm, color: COLORS.textSecondary, marginTop: SPACING.xs },
+    headerTitle: { fontSize: FONT.title, fontWeight: FONT.black },
+    headerSub: { fontSize: FONT.sm, marginTop: SPACING.xs },
 
     catList: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xl },
     catCard: {
-        backgroundColor: COLORS.surface,
         width: 110,
         paddingVertical: SPACING.lg,
         paddingHorizontal: SPACING.md,
@@ -236,76 +293,72 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginRight: SPACING.md,
         borderWidth: 1,
-        borderColor: COLORS.border,
+    },
+    catIconContainer: {
+        width: 48, height: 48, borderRadius: 24,
+        justifyContent: 'center', alignItems: 'center',
+        marginBottom: SPACING.md,
     },
     catEmoji: { fontSize: 28, marginBottom: SPACING.sm },
-    catLabel: { color: COLORS.text, fontSize: FONT.sm, fontWeight: FONT.semibold, textAlign: 'center' },
-    catCount: { color: COLORS.textSecondary, fontSize: FONT.xs, marginTop: SPACING.xs },
+    catLabel: { fontSize: 13, fontWeight: '800', textAlign: 'center' },
+    catCount: { fontSize: 11, marginTop: 4, fontWeight: '600' },
 
     exerciseSection: { paddingHorizontal: SPACING.xl },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
-    sectionTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, color: COLORS.text },
-    progressText: { color: COLORS.primary, fontWeight: FONT.bold, fontSize: FONT.sm },
+    sectionTitle: { fontSize: FONT.xl, fontWeight: FONT.bold },
+    progressText: { fontWeight: FONT.bold, fontSize: FONT.sm },
 
     progressBarContainer: {
-        height: 6, backgroundColor: COLORS.surface, borderRadius: 3,
+        height: 6, borderRadius: 3,
         marginBottom: SPACING.lg, overflow: 'hidden',
     },
     progressBarFill: {
-        height: '100%', backgroundColor: COLORS.primary, borderRadius: 3,
+        height: '100%', borderRadius: 3,
     },
 
     exerciseCard: {
-        backgroundColor: COLORS.surface,
         padding: SPACING.lg,
         borderRadius: RADIUS.lg,
         marginBottom: SPACING.md,
         borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    exerciseCardDone: {
-        borderColor: COLORS.primary,
-        backgroundColor: COLORS.primaryLight,
     },
     exerciseLeft: { flexDirection: 'row', alignItems: 'flex-start' },
     exerciseNumber: {
         width: 32, height: 32, borderRadius: 16,
-        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md, marginTop: 2,
     },
-    exerciseNumberText: { color: COLORS.text, fontWeight: FONT.bold, fontSize: FONT.sm },
+    exerciseNumberText: { fontWeight: FONT.bold, fontSize: 14 },
     exerciseInfo: { flex: 1 },
-    exerciseName: { color: COLORS.text, fontSize: FONT.md, fontWeight: FONT.semibold, marginBottom: SPACING.xs },
-    exerciseNameDone: { textDecorationLine: 'line-through', color: COLORS.textSecondary },
-    exerciseMeta: { color: COLORS.primary, fontSize: FONT.sm, fontWeight: FONT.medium, marginBottom: SPACING.xs },
-    exerciseDesc: { color: COLORS.textSecondary, fontSize: FONT.sm, lineHeight: 18 },
+    exerciseName: { fontSize: FONT.md, fontWeight: FONT.semibold, marginBottom: SPACING.xs },
+    exerciseMeta: { fontSize: FONT.sm, fontWeight: FONT.medium, marginBottom: SPACING.xs },
+    exerciseDesc: { fontSize: FONT.sm, lineHeight: 18 },
 
     startBtn: {
-        backgroundColor: COLORS.primary, padding: SPACING.lg, borderRadius: RADIUS.lg,
+        padding: SPACING.lg, borderRadius: RADIUS.lg,
         alignItems: 'center', marginTop: SPACING.md, ...SHADOW.md,
     },
-    startBtnText: { color: COLORS.textInverse, fontSize: FONT.lg, fontWeight: FONT.bold },
+    startBtnText: { fontSize: FONT.lg, fontWeight: FONT.bold },
 
-    tapHint: { color: COLORS.textSecondary, textAlign: 'center', marginTop: SPACING.lg, fontSize: FONT.sm, fontStyle: 'italic' },
+    tapHint: { textAlign: 'center', marginTop: SPACING.lg, fontSize: FONT.sm, fontStyle: 'italic' },
 
     doneCard: {
-        backgroundColor: COLORS.primaryLight, padding: SPACING.xxl, borderRadius: RADIUS.xl,
+        padding: SPACING.xxl, borderRadius: RADIUS.xl,
         alignItems: 'center', marginTop: SPACING.md,
     },
     doneEmoji: { fontSize: 48, marginBottom: SPACING.md },
-    doneTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, color: COLORS.primary, marginBottom: SPACING.sm },
-    doneText: { color: COLORS.textSecondary, textAlign: 'center', fontSize: FONT.md, marginBottom: SPACING.lg },
+    doneTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, marginBottom: SPACING.sm },
+    doneText: { textAlign: 'center', fontSize: FONT.md, marginBottom: SPACING.lg },
     resetBtn: {
-        backgroundColor: COLORS.primary, paddingHorizontal: SPACING.xxl, paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.xxl, paddingVertical: SPACING.md,
         borderRadius: RADIUS.lg,
     },
-    resetBtnText: { color: COLORS.textInverse, fontWeight: FONT.bold, fontSize: FONT.md },
+    resetBtnText: { fontWeight: FONT.bold, fontSize: FONT.md },
 
     emptyState: {
         alignItems: 'center', paddingHorizontal: SPACING.xxxl,
         paddingVertical: 60,
     },
     emptyEmoji: { fontSize: 48, marginBottom: SPACING.lg },
-    emptyTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, color: COLORS.text, marginBottom: SPACING.sm },
-    emptyText: { color: COLORS.textSecondary, textAlign: 'center', fontSize: FONT.md, lineHeight: 22 },
+    emptyTitle: { fontSize: FONT.xl, fontWeight: FONT.bold, marginBottom: SPACING.sm },
+    emptyText: { textAlign: 'center', fontSize: FONT.md, lineHeight: 22 },
 });

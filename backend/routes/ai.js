@@ -25,53 +25,66 @@ router.post('/identify', upload.single('image'), async (req, res) => {
 
         let detectedLabel = 'Unknown';
         let confidence = 0;
+        let calories = 0;
+        let aiMacros = null;
 
         // 1. Try Python ML Model
         try {
             const aiRes = await axios.post('http://localhost:8000/predict', form, {
                 headers: { ...form.getHeaders() },
-                timeout: 5000,
+                timeout: 30000, // Increased to 30s for Vision AI
             });
             if (aiRes.data && aiRes.data.label) {
-                detectedLabel = aiRes.data.label.toLowerCase().trim();
+                detectedLabel = aiRes.data.label;
                 confidence = aiRes.data.confidence || 0.5;
+                calories = aiRes.data.calories || 100;
+                aiMacros = aiRes.data.macros;
+                console.log(`[AI] Model returned: ${detectedLabel} (${calories} kcal)`);
             }
         } catch (aiErr) {
-            console.log("[AI] Python model failed, falling back to keyword detection...");
+            console.log("[AI] Python model failed or timed out. Error:", aiErr.message);
         }
 
-        // 2. Matching with dataset (foods.json)
-        // Convert detected label to lowercase and match
-        let matchedFood = null;
-        let calories = 0;
+        // 2. Matching with dataset (optional override)
+        let finalLabel = detectedLabel;
+        let finalCalories = calories;
 
         const foodKeys = Object.keys(foods);
         for (const key of foodKeys) {
-            if (detectedLabel.includes(key) || key.includes(detectedLabel)) {
-                matchedFood = key;
-                calories = foods[key];
+            const lowerKey = key.toLowerCase();
+            const lowerDetected = detectedLabel.toLowerCase();
+            if (lowerDetected.includes(lowerKey) || lowerKey.includes(lowerDetected)) {
+                finalLabel = key;
+                finalCalories = foods[key];
                 break;
             }
         }
 
-        // 3. If NOT found in dataset, return error (DO NOT return fake calories)
-        if (!matchedFood) {
-            console.log(`[AI] Food "${detectedLabel}" not recognized in dataset.`);
-            return res.json({ 
-                success: false, 
-                error: "Food not recognized",
-                detected: detectedLabel // for debugging
-            });
+        // 3. Return results
+        if (finalLabel === 'Unknown') {
+            return res.json({ success: false, error: "Please try a clearer picture." });
         }
 
-        console.log(`[AI] Identified: ${matchedFood} (${calories} kcal)`);
-        
+        // 3. Macros Resolution (Priority: AI > Calculated Fallback)
+        let protein, carbs, fat;
+        if (aiMacros && aiMacros.protein !== undefined) {
+            protein = aiMacros.protein;
+            carbs = aiMacros.carbs;
+            fat = aiMacros.fat;
+        } else {
+            // Fallback distribution (20% protein, 50% carbs, 30% fat)
+            protein = Math.round((finalCalories * 0.20) / 4);
+            carbs = Math.round((finalCalories * 0.50) / 4);
+            fat = Math.round((finalCalories * 0.30) / 9);
+        }
+
         return res.json({
             success: true,
-            label: matchedFood.charAt(0).toUpperCase() + matchedFood.slice(1),
-            calories,
+            label: finalLabel.charAt(0).toUpperCase() + finalLabel.slice(1),
+            calories: finalCalories,
+            macros: { protein, carbs, fat },
             confidence,
-            items: [{ name: matchedFood, calories }]
+            items: [{ name: finalLabel, calories: finalCalories }]
         });
 
     } catch (err) {

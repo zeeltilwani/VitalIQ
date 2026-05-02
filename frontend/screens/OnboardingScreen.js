@@ -208,8 +208,26 @@ export default function OnboardingScreen({ route, navigation }) {
                 <View style={styles.slide}>
                     <Text style={styles.qIcon}>⚖️</Text>
                     <Text style={[styles.qTitle, { color: theme.text }]}>Physical Metrics</Text>
-                    <TextInput style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} keyboardType="numeric" value={height} onChangeText={setHeight} placeholder="Height (cm)" placeholderTextColor={theme.textSecondary} />
-                    <TextInput style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text, marginTop: 15 }]} keyboardType="numeric" value={weight} onChangeText={setWeight} placeholder="Weight (kg)" placeholderTextColor={theme.textSecondary} />
+                    <TextInput 
+                        style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} 
+                        keyboardType="decimal-pad" 
+                        value={height} 
+                        onChangeText={setHeight} 
+                        placeholder="Height (cm)" 
+                        placeholderTextColor={theme.textSecondary} 
+                        returnKeyType="next"
+                        autoCorrect={false}
+                    />
+                    <TextInput 
+                        style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text, marginTop: 15 }]} 
+                        keyboardType="decimal-pad" 
+                        value={weight} 
+                        onChangeText={setWeight} 
+                        placeholder="Weight (kg)" 
+                        placeholderTextColor={theme.textSecondary} 
+                        returnKeyType="done"
+                        autoCorrect={false}
+                    />
                     {getError() && <Text style={[styles.errorText, { color: theme.danger }]}>{getError()}</Text>}
                 </View>
             );
@@ -224,11 +242,13 @@ export default function OnboardingScreen({ route, navigation }) {
                     <Text style={[styles.hint, { color: theme.textSecondary }]}>Current: {weight} kg | Goal: {goal}</Text>
                     <TextInput 
                         style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text, marginTop: 15 }]} 
-                        keyboardType="numeric" 
+                        keyboardType="decimal-pad" 
                         value={targetWeight} 
                         onChangeText={setTargetWeight} 
                         placeholder={goal === 'Weight Loss' ? `Suggested: <${weight}` : `Suggested: >${weight}`} 
                         placeholderTextColor={theme.textSecondary} 
+                        returnKeyType="done"
+                        autoCorrect={false}
                     />
                     {getError() && <Text style={[styles.errorText, { color: theme.danger }]}>{getError()}</Text>}
                 </View>
@@ -252,7 +272,7 @@ export default function OnboardingScreen({ route, navigation }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => step > 1 && setStep(step - 1)} style={{ opacity: step > 1 ? 1 : 0 }}>
                         <Text style={[styles.headerText, { color: theme.textSecondary }]}>← Back</Text>
@@ -272,7 +292,7 @@ export default function OnboardingScreen({ route, navigation }) {
                         style={[styles.nextBtn, { backgroundColor: theme.primary }, !isStepValid() && { opacity: 0.5 }]} 
                         onPress={nextStep}
                     >
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.nextText}>{step === SLIDES ? "Launch Profile" : "Continue"}</Text>}
+                        {loading ? <ActivityIndicator color={theme.textInverse} /> : <Text style={[styles.nextText, { color: theme.textInverse }]}>{step === SLIDES ? "Launch Profile" : "Continue"}</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -301,5 +321,5 @@ const styles = StyleSheet.create({
     selBtnText: { fontSize: 18, fontWeight: 'bold' },
     footer: { padding: 25, paddingBottom: 50 },
     nextBtn: { padding: 20, borderRadius: 16, alignItems: 'center' },
-    nextText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+    nextText: { fontSize: 18, fontWeight: 'bold' }
 });
