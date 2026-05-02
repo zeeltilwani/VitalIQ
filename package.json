@@ -1,0 +1,21 @@
+{
+  "name": "vitaliq-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm run setup:backend && npm run setup:frontend && npm run setup:ai",
+
+    "setup:backend": "cd backend && npm install",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:ai": "cd ai_service && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt",
+
+    "start": "concurrently \"npm run start:backend\" \"npm run start:ai\" \"npm run start:frontend\"",
+
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npx expo start",
+    "start:ai": "cd ai_service && ./venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

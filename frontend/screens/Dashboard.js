@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import PressableButton from '../components/PressableButton';
 
 import Svg, { Circle } from 'react-native-svg';
-import { Flame, Target, ChevronRight, Scan, Plus, Minus } from 'lucide-react-native';
+import { Flame, Target, ChevronRight, Scan, Plus, Minus, Hand, Heart, Trash2 } from 'lucide-react-native';
 import { NUTRITION_ICONS } from '../assets/nutrition';
 import { HYDRATION_ASSETS } from '../assets/hydration';
 import { DIET_IMAGES } from '../assets/diet';
@@ -63,6 +63,29 @@ export default function Dashboard({ route, navigation }) {
         }
     };
 
+    const deleteFood = (logId) => {
+        Alert.alert(
+            "Delete Log",
+            "Are you sure you want to delete this food log?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "Delete", 
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await api.delete(`/logs/food/${logId}`);
+                            fetchProfileAndData(); // Refresh summary and meals
+                        } catch (err) {
+                            console.error('Delete error:', err);
+                            Alert.alert("Error", "Unable to delete food log.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const ProgressBar = ({ current, total, color }) => (
         <View style={[styles.progressBarBg, { backgroundColor: '#222' }]}>
             <View 
@@ -94,8 +117,13 @@ export default function Dashboard({ route, navigation }) {
             ) : (
                 data.map((item, i) => (
                     <View key={i} style={styles.foodRow}>
-                        <Text style={[styles.foodName, { color: '#fff' }]}>{item.food_name}</Text>
-                        <Text style={[styles.foodCal, { color: '#666' }]}>{item.calories} kcal</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.foodName, { color: '#fff' }]}>{item.food_name}</Text>
+                            <Text style={[styles.foodCal, { color: '#666' }]}>{item.calories} kcal</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => deleteFood(item.id)} style={styles.deleteIcon}>
+                            <Trash2 size={16} color="#ef4444" opacity={0.6} />
+                        </TouchableOpacity>
                     </View>
                 ))
             )}
@@ -121,7 +149,10 @@ export default function Dashboard({ route, navigation }) {
                 {/* Header Section */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={[styles.greeting, { color: theme.text }]}>Hi, {user?.name?.split(' ')[0]} 👋</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={[styles.greeting, { color: theme.text }]}>Hi, {user?.name?.split(' ')[0]}</Text>
+                            <Hand size={24} color="#FFD700" style={{ marginLeft: 8 }} />
+                        </View>
                         <Text style={[styles.dateText, { color: theme.textSecondary }]}>
                             {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
                         </Text>
@@ -185,9 +216,12 @@ export default function Dashboard({ route, navigation }) {
                     
                     <ProgressBar current={summary.calories} total={dailyGoal} color={theme.primary} />
                     
-                    <Text style={styles.motivationalText}>
-                        You're doing great! Keep it up. 💚
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+                        <Text style={[styles.motivationalText, { color: '#666' }]}>
+                            You're doing great! Keep it up.
+                        </Text>
+                        <Heart size={14} color="#ef4444" fill="#ef4444" style={{ marginLeft: 4 }} />
+                    </View>
                 </View>
 
                 {/* Quick Action Grid */}
@@ -252,8 +286,8 @@ export default function Dashboard({ route, navigation }) {
                 <Text style={[styles.sectionTitle, { color: '#fff' }]}>Today's Nutrition</Text>
                 <MealCard title="Breakfast" data={meals.Breakfast} type="breakfast" />
                 <MealCard title="Lunch" data={meals.Lunch} type="lunch" />
-                <MealCard title="Dinner" data={meals.Dinner} type="dinner" />
                 <MealCard title="Snacks" data={meals.Snacks} type="snacks" />
+                <MealCard title="Dinner" data={meals.Dinner} type="dinner" />
 
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -324,5 +358,6 @@ const styles = StyleSheet.create({
     foodRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
     foodName: { fontSize: 15, fontWeight: '500' },
     foodCal: { fontSize: 13 },
+    deleteIcon: { padding: 8, marginRight: -8 },
     emptyText: { fontSize: 13, fontStyle: 'italic', textAlign: 'center', paddingVertical: 4 },
 });

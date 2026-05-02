@@ -5,8 +5,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { SPACING, RADIUS, FONT, SHADOW, COLORS } from '../theme';
 import api from '../api';
+import PressableButton from '../components/PressableButton';
+import { Eye, EyeOff, UserPlus, Sprout } from 'lucide-react-native';
 
 export default function SignupScreen({ navigation }) {
     const { theme } = useTheme();
@@ -56,7 +58,7 @@ export default function SignupScreen({ navigation }) {
 
                     {/* Branding */}
                     <View style={styles.header}>
-                        <Text style={styles.logo}>🌱</Text>
+                        <Sprout size={60} color={theme.primary} style={{ marginBottom: SPACING.sm }} />
                         <Text style={[styles.title, { color: theme.text }]}>Join VitalIQ</Text>
                         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Start your personalized health journey</Text>
                     </View>
@@ -85,44 +87,46 @@ export default function SignupScreen({ navigation }) {
                             onChangeText={setEmail}
                         />
 
-                        <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Password</Text>
                         <View style={[styles.passwordWrapper, { backgroundColor: theme.bg, borderColor: theme.border }]}>
                             <TextInput
                                 style={[styles.passwordInput, { color: theme.text }]}
                                 placeholder="Min. 6 characters"
                                 placeholderTextColor={theme.textSecondary}
                                 secureTextEntry={!showPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                textContentType="oneTimeCode"
                                 value={password}
                                 onChangeText={setPassword}
                             />
-                            <TouchableOpacity
-                                style={styles.eyeBtn}
+                            <PressableButton
+                                variant="ghost"
+                                icon={showPassword ? <EyeOff size={20} color={theme.textSecondary} /> : <Eye size={20} color={theme.textSecondary} />}
                                 onPress={() => setShowPassword(prev => !prev)}
-                            >
-                                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
-                            </TouchableOpacity>
+                                style={{ paddingHorizontal: SPACING.md }}
+                            />
                         </View>
 
-                        <TouchableOpacity
-                            style={[styles.btn, { backgroundColor: theme.primary }]}
+                        <PressableButton
+                            label="Create Account"
+                            icon={<UserPlus size={20} color="#fff" />}
                             onPress={handleSignup}
+                            loading={loading}
                             disabled={loading}
-                            activeOpacity={0.8}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={theme.textInverse} />
-                            ) : (
-                                <Text style={[styles.btnText, { color: theme.textInverse }]}>Create Account</Text>
-                            )}
-                        </TouchableOpacity>
+                            size="lg"
+                            style={{ marginTop: SPACING.md, width: '100%' }}
+                        />
                     </View>
 
                     {/* Footer */}
                     <View style={styles.footer}>
                         <Text style={[styles.footerText, { color: theme.textSecondary }]}>Already have an account?</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={[styles.footerLink, { color: theme.primary }]}> Sign In</Text>
-                        </TouchableOpacity>
+                        <PressableButton
+                            variant="ghost"
+                            label="Sign In"
+                            onPress={() => navigation.navigate('Login')}
+                            style={{ marginLeft: 4 }}
+                        />
                     </View>
 
                 </ScrollView>

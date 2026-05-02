@@ -14,6 +14,9 @@ export default function DietPlanDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { theme } = useTheme();
 
+    const SHARE_ICON = require('../assets/chatbot/share.png');
+    const DOWNLOAD_ICON = require('../assets/chatbot/download.png');
+
     if (!plan) return null;
 
     const generatePlanHTML = () => {
@@ -137,15 +140,15 @@ export default function DietPlanDetailScreen({ route, navigation }) {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={[styles.headerTitle, { color: theme.textSecondary }]}>Plan Details</Text>
                 <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
-                    <Text style={{ fontSize: 20 }}>📤</Text>
+                    <Image source={SHARE_ICON} style={styles.headerIcon} />
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
                 {/* Title Section */}
                 <View style={styles.titleSection}>
-                    <View style={[styles.iconBox, { backgroundColor: theme.primaryLight }]}>
-                        <Text style={styles.icon}>{plan.icon}</Text>
+                    <View style={styles.imageBox}>
+                        <Image source={plan.image} style={styles.planImage} />
                     </View>
                     <Text style={[styles.title, { color: theme.text }]}>{plan.title}</Text>
                     <Text style={[styles.desc, { color: theme.textSecondary }]}>{plan.desc}</Text>
@@ -196,14 +199,14 @@ export default function DietPlanDetailScreen({ route, navigation }) {
                 <PressableButton 
                     variant="secondary" 
                     label="Share" 
-                    icon="📤"
+                    icon={<Image source={SHARE_ICON} style={styles.btnIcon} />}
                     onPress={handleShare}
                     style={{ flex: 1, marginRight: SPACING.md }}
                 />
                 <PressableButton 
                     variant="primary" 
                     label="Download" 
-                    icon="📥"
+                    icon={<Image source={DOWNLOAD_ICON} style={styles.btnIcon} />}
                     onPress={handleDownload}
                     style={{ flex: 1.5 }}
                 />
@@ -226,11 +229,13 @@ const styles = StyleSheet.create({
     inner: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg },
 
     titleSection: { alignItems: 'center', marginBottom: SPACING.xxl },
-    iconBox: {
-        width: 80, height: 80,
-        borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg,
+    imageBox: {
+        width: 100, height: 100,
+        borderRadius: 24, overflow: 'hidden',
+        justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg,
+        backgroundColor: '#1A1A1A'
     },
-    icon: { fontSize: 40 },
+    planImage: { width: '100%', height: '100%', resizeMode: 'cover' },
     title: { fontSize: 28, fontWeight: '900', textAlign: 'center', marginBottom: 8 },
     desc: { fontSize: 15, textAlign: 'center', paddingHorizontal: SPACING.lg, lineHeight: 22 },
     metaRow: { flexDirection: 'row', justifyContent: 'center', marginTop: SPACING.lg, gap: SPACING.md },
@@ -267,5 +272,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.xl,
         paddingTop: SPACING.md,
         backgroundColor: 'transparent',
-    }
+    },
+    headerIcon: { width: 22, height: 22, resizeMode: 'contain' },
+    btnIcon: { width: 20, height: 20, resizeMode: 'contain' },
 });

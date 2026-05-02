@@ -171,10 +171,22 @@ export default function PressableButton({
                 ) : (
                     <>
                         {icon && variant !== 'icon' && (
-                            <Text style={[styles.icon, { marginRight: label ? 8 : 0 }]}>{icon}</Text>
+                            <View style={{ marginRight: label ? 8 : 0 }}>
+                                {typeof icon === 'string' ? (
+                                    <Text style={styles.icon}>{icon}</Text>
+                                ) : (
+                                    icon
+                                )}
+                            </View>
                         )}
                         {variant === 'icon' ? (
-                            <Text style={styles.iconLabel}>{icon}</Text>
+                            <View style={styles.iconLabel}>
+                                {typeof icon === 'string' ? (
+                                    <Text style={{ fontSize: 24 }}>{icon}</Text>
+                                ) : (
+                                    icon
+                                )}
+                            </View>
                         ) : (
                             label && (
                                 <Text

@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
-import { RADIUS, SPACING } from '../theme';
+import { RADIUS, SPACING, COLORS, FONT } from '../theme';
 import api from '../api';
+import PressableButton from '../components/PressableButton';
+import { Flame, Scale, Dumbbell, CheckCircle } from 'lucide-react-native';
 
 export default function CalorieCalculatorScreen({ route, navigation }) {
     const { user } = route.params;
@@ -15,9 +17,9 @@ export default function CalorieCalculatorScreen({ route, navigation }) {
     const tdee = user.tdee ? Math.round(user.tdee) : 2400;
     
     const plans = [
-        { title: 'Weight Loss', calories: tdee - 400, icon: '🔥', desc: 'Deficit for steady fat loss' },
-        { title: 'Maintenance', calories: tdee, icon: '⚖️', desc: 'Keep your composition stable' },
-        { title: 'Muscle Gain', calories: tdee + 400, icon: '💪', desc: 'Surplus to fuel growth' }
+        { title: 'Weight Loss', calories: tdee - 400, icon: <Flame size={32} color={theme.accent} />, desc: 'Deficit for steady fat loss' },
+        { title: 'Maintenance', calories: tdee, icon: <Scale size={32} color={theme.primary} />, desc: 'Keep your composition stable' },
+        { title: 'Muscle Gain', calories: tdee + 400, icon: <Dumbbell size={32} color={theme.primary} />, desc: 'Surplus to fuel growth' }
     ];
 
     const saveGoal = async () => {
@@ -61,7 +63,7 @@ export default function CalorieCalculatorScreen({ route, navigation }) {
                             ]}
                         >
                             <View style={styles.cardHeader}>
-                                <Text style={styles.cardIcon}>{p.icon}</Text>
+                                <View style={styles.cardIcon}>{p.icon}</View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={[styles.cardTitle, { color: theme.text }, isActive && { color: theme.primary }]}>{p.title}</Text>
                                     <Text style={[styles.cardDesc, { color: theme.textSecondary }]}>{p.desc}</Text>
@@ -75,9 +77,15 @@ export default function CalorieCalculatorScreen({ route, navigation }) {
                 })}
             </View>
 
-            <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={saveGoal} disabled={loading}>
-                {loading ? <ActivityIndicator color={theme.textInverse} /> : <Text style={[styles.btnText, { color: theme.textInverse }]}>Confirm Strategy</Text>}
-            </TouchableOpacity>
+            <PressableButton
+                label="Confirm Strategy"
+                icon={<CheckCircle size={20} color="#fff" />}
+                onPress={saveGoal}
+                loading={loading}
+                disabled={loading}
+                size="lg"
+                style={{ marginBottom: 40, width: '100%' }}
+            />
         </View>
     );
 }

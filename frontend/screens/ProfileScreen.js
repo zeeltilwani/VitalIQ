@@ -10,6 +10,10 @@ import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 import api, { API_URL } from '../api';
 import PressableButton from '../components/PressableButton';
+import { 
+    Camera, Pencil, Check, X, Moon, BarChart3, 
+    UserCircle, ShieldCheck, LogOut, AlertTriangle, ChevronRight
+} from 'lucide-react-native';
 
 // ─── BMI / BMR Calculation Helpers ───
 const calculateBMI = (weightKg, heightCm) => {
@@ -204,7 +208,7 @@ export default function ProfileScreen({ navigation }) {
     if (error || !user) {
         return (
             <View style={[styles.loadingBox, { backgroundColor: theme.bg }]}>
-                <Text style={{ color: theme.danger, fontSize: 48, marginBottom: SPACING.lg }}>⚠️</Text>
+                <AlertTriangle size={60} color={theme.danger} style={{ marginBottom: SPACING.lg }} />
                 <Text style={{ color: theme.text, fontSize: FONT.lg, fontWeight: FONT.bold, marginBottom: SPACING.sm }}>
                     Something went wrong
                 </Text>
@@ -239,7 +243,7 @@ export default function ProfileScreen({ navigation }) {
                                 <Text style={[styles.avatarText, { color: theme.textInverse }]}>{user.name?.charAt(0) || '?'}</Text>
                             )}
                             <View style={[styles.cameraBadge, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                                <Text style={{ fontSize: 10 }}>📷</Text>
+                                <Camera size={14} color={theme.primary} />
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -255,10 +259,10 @@ export default function ProfileScreen({ navigation }) {
                                 placeholderTextColor={theme.textSecondary}
                             />
                             <TouchableOpacity style={styles.editIconBtn} onPress={handleUpdateName}>
-                                <Text style={{ fontSize: 18 }}>✅</Text>
+                                <Check size={20} color={theme.primary} />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.editIconBtn} onPress={() => setIsEditingName(false)}>
-                                <Text style={{ fontSize: 18 }}>❌</Text>
+                                <X size={20} color={theme.danger} />
                             </TouchableOpacity>
                         </View>
                     ) : (
@@ -269,7 +273,7 @@ export default function ProfileScreen({ navigation }) {
                         >
                             <Text style={[styles.name, { color: theme.text }]}>{user.name}</Text>
                             <View style={[styles.editBadge, { backgroundColor: theme.surfaceLight }]}>
-                                <Text style={{ fontSize: 10 }}>✏️</Text>
+                                <Pencil size={10} color={theme.textSecondary} />
                             </View>
                         </TouchableOpacity>
                     )}
@@ -280,11 +284,13 @@ export default function ProfileScreen({ navigation }) {
 
                 {/* Theme Toggle Card */}
                 <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <Text style={[styles.cardTitle, { color: theme.primary }]}>🌗 Appearance</Text>
                     <View style={styles.themeRow}>
-                        <View>
-                            <Text style={[styles.themeLabel, { color: theme.text }]}>Dark Mode</Text>
-                            <Text style={[styles.themeDesc, { color: theme.textSecondary }]}>Switch between dark and light themes</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Moon size={18} color={theme.primary} style={{ marginRight: 12 }} />
+                            <View>
+                                <Text style={[styles.themeLabel, { color: theme.text }]}>Dark Mode</Text>
+                                <Text style={[styles.themeDesc, { color: theme.textSecondary }]}>Switch between dark and light themes</Text>
+                            </View>
                         </View>
                         <Switch
                             value={isDarkMode}
@@ -297,13 +303,16 @@ export default function ProfileScreen({ navigation }) {
 
                 {/* Health Analytics Card */}
                 <TouchableOpacity
-                    style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: SPACING.sm }]}
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate('Analytics', { user })}
                 >
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-                        <Text style={[styles.cardTitle, { color: theme.primary }]}>📊 Health Analytics</Text>
-                        <Text style={{ color: theme.primary, fontSize: FONT.xs, fontWeight: FONT.bold }}>View Full →</Text>
+                        <View style={styles.cardHeaderRow}>
+                            <BarChart3 size={16} color={theme.primary} />
+                            <Text style={[styles.cardTitle, { color: theme.primary, marginBottom: 0 }]}>Health Analytics</Text>
+                        </View>
+                        <ChevronRight size={16} color={theme.primary} />
                     </View>
 
                     <View style={styles.analyticsRow}>
@@ -339,7 +348,10 @@ export default function ProfileScreen({ navigation }) {
 
                 {/* Identity Card */}
                 <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <Text style={[styles.cardTitle, { color: theme.primary }]}>Identity & Location</Text>
+                    <View style={styles.cardHeaderRow}>
+                        <UserCircle size={16} color={theme.primary} />
+                        <Text style={[styles.cardTitle, { color: theme.primary, marginBottom: 0 }]}>Identity & Location</Text>
+                    </View>
                     <InfoRow label="Email" value={user.email} />
                     <InfoRow label="DOB" value={user.dob ? new Date(user.dob).toDateString() : 'Not Set'} />
                     <InfoRow label="Location" value={user.pincode && user.city ? `${user.city}, ${user.pincode}` : 'Not Set'} />
@@ -347,7 +359,10 @@ export default function ProfileScreen({ navigation }) {
 
                 {/* Security Card */}
                 <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                    <Text style={[styles.cardTitle, { color: theme.primary }]}>Security</Text>
+                    <View style={styles.cardHeaderRow}>
+                        <ShieldCheck size={16} color={theme.primary} />
+                        <Text style={[styles.cardTitle, { color: theme.primary, marginBottom: 0 }]}>Security</Text>
+                    </View>
                     {!showChangePassword ? (
                         <PressableButton 
                             variant="secondary" 
@@ -381,12 +396,19 @@ export default function ProfileScreen({ navigation }) {
                                 onChangeText={setConfirmPassword}
                             />
                             <View style={styles.pwActions}>
-                                <TouchableOpacity style={[styles.miniBtn, { backgroundColor: theme.danger }]} onPress={() => setShowChangePassword(false)}>
-                                    <Text style={[styles.miniBtnText, { color: theme.textInverse }]}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.miniBtn, { backgroundColor: theme.primary }]} onPress={handleChangePassword} disabled={pwLoading}>
-                                    {pwLoading ? <ActivityIndicator color={theme.textInverse} /> : <Text style={[styles.miniBtnText, { color: theme.textInverse }]}>Update</Text>}
-                                </TouchableOpacity>
+                                <PressableButton
+                                    variant="ghost"
+                                    label="Cancel"
+                                    onPress={() => setShowChangePassword(false)}
+                                    style={{ marginRight: SPACING.sm }}
+                                />
+                                <PressableButton
+                                    variant="primary"
+                                    label="Update"
+                                    onPress={handleChangePassword}
+                                    loading={pwLoading}
+                                    disabled={pwLoading}
+                                />
                             </View>
                         </View>
                     )}
@@ -396,8 +418,9 @@ export default function ProfileScreen({ navigation }) {
                 <PressableButton 
                     variant="danger" 
                     label="Sign Out" 
+                    icon={<LogOut size={20} color="#fff" />}
                     onPress={handleLogout} 
-                    style={{ marginTop: SPACING.md }}
+                    style={{ marginTop: SPACING.md, width: '100%' }}
                 />
 
                 <Text style={[styles.version, { color: theme.textSecondary }]}>VitalIQ v2.5.0</Text>
@@ -440,8 +463,8 @@ const styles = StyleSheet.create({
     analyticsUnit: { fontSize: 10, marginTop: 2 },
     categoryBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: RADIUS.sm, marginTop: SPACING.xs },
     categoryText: { fontSize: 10, fontWeight: 'bold' },
-    card: { width: '100%', padding: SPACING.xl, borderRadius: RADIUS.xl, marginBottom: SPACING.lg, borderWidth: 1, ...SHADOW.sm },
-    cardTitle: { fontSize: 10, fontWeight: 'bold', marginBottom: SPACING.md, textTransform: 'uppercase', letterSpacing: 1.5 },
+    cardTitle: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 8 },
+    cardHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
     row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SPACING.md, borderBottomWidth: 1 },
     rowLabel: { fontSize: FONT.md, fontWeight: '500' },
     rowValue: { fontSize: FONT.md, fontWeight: 'bold' },

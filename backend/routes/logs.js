@@ -146,4 +146,20 @@ router.post('/water', async (req, res) => {
     }
 });
 
+// --- Delete Food Log ---
+router.delete('/food/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        const result = await db.query('DELETE FROM food_logs WHERE id = $1 AND user_id = $2 RETURNING *', [id, userId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Food log not found or unauthorized' });
+        }
+        res.json({ success: true, message: 'Food log deleted' });
+    } catch (err) {
+        console.error('[Delete Food Log Error]', err);
+        res.status(500).json({ success: false, error: 'Server error deleting food log' });
+    }
+});
+
 module.exports = router;

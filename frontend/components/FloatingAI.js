@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, FlatList,
-    Modal, StyleSheet, Animated, Dimensions,
+    Modal, StyleSheet, Animated, Dimensions, Image
 } from 'react-native';
 import { RADIUS, FONT, SHADOW, SPACING } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BOT_ICON = require('../assets/chatbot/bot_icon.png');
 
 // ─── Predefined Q&A Database ───
 const QUICK_QUESTIONS = [
@@ -119,7 +121,11 @@ export default function FloatingAI() {
                     onPress={toggleChat}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.fabIcon}>{visible ? '✕' : '🤖'}</Text>
+                    {visible ? (
+                        <Text style={styles.fabIcon}>✕</Text>
+                    ) : (
+                        <Image source={BOT_ICON} style={styles.fabImg} />
+                    )}
                 </TouchableOpacity>
             </Animated.View>
 
@@ -129,11 +135,14 @@ export default function FloatingAI() {
                     <View style={[styles.modalContent, { backgroundColor: theme.bg }]}>
                         {/* Header */}
                         <View style={[styles.modalHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-                            <View>
-                                <Text style={[styles.modalTitle, { color: theme.text }]}>VitalIQ Assistant</Text>
-                                <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                                    Tap a question to get instant answers
-                                </Text>
+                            <View style={styles.headerTitleRow}>
+                                <Image source={BOT_ICON} style={styles.headerBotIcon} />
+                                <View>
+                                    <Text style={[styles.modalTitle, { color: theme.text }]}>VitalIQ Assistant</Text>
+                                    <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
+                                        Tap a question to get instant answers
+                                    </Text>
+                                </View>
                             </View>
                             <View style={styles.headerActions}>
                                 <TouchableOpacity
@@ -206,27 +215,30 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     fabIcon: { fontSize: 24, color: '#FFFFFF' },
+    fabImg: { width: 32, height: 32, borderRadius: 16 },
 
     modalOverlay: {
-        flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end',
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end',
     },
     modalContent: {
-        height: SCREEN_HEIGHT * 0.8,
-        borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, overflow: 'hidden',
+        height: SCREEN_HEIGHT * 0.75,
+        borderTopLeftRadius: RADIUS.xxl, borderTopRightRadius: RADIUS.xxl, overflow: 'hidden',
     },
     modalHeader: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        padding: SPACING.xl, paddingBottom: SPACING.lg,
+        paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg,
         borderBottomWidth: 1,
     },
-    modalTitle: { fontSize: FONT.lg, fontWeight: FONT.bold },
+    headerTitleRow: { flexDirection: 'row', alignItems: 'center' },
+    headerBotIcon: { width: 36, height: 36, marginRight: 12, borderRadius: 18 },
+    modalTitle: { fontSize: FONT.lg, fontWeight: '800' },
     modalSubtitle: { fontSize: FONT.xs, marginTop: 2 },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
     headerBtn: {
         width: 34, height: 34, borderRadius: 17,
         justifyContent: 'center', alignItems: 'center',
     },
-    closeBtnText: { fontSize: 16, fontWeight: FONT.bold },
+    closeBtnText: { fontSize: 16, fontWeight: 'bold' },
 
     messageList: { padding: SPACING.lg, paddingBottom: SPACING.xl },
     bubble: {
