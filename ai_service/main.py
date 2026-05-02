@@ -21,11 +21,19 @@ if GROQ_API_KEY:
 else:
     print("❌ ERROR: No GROQ_API_KEY found in .env")
 
+ACTIVE_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+print(f"✅ [AI Startup] Active Model: {ACTIVE_MODEL}")
+
 PROMPT = """
 Analyze this food image and return ONLY a JSON object:
 {
   "label": "Food Name",
   "calories": 100,
+  "macros": {
+    "protein": 10,
+    "carbs": 20,
+    "fat": 5
+  },
   "confidence": 0.9,
   "alternatives": []
 }
@@ -45,9 +53,9 @@ async def predict_food(file: UploadFile = File(...)):
         base64_image = base64.b64encode(contents).decode('utf-8')
         print("🤖 [AI] Calling Groq Llama-Vision...")
 
-        # Using the newest Llama 4 Scout model
+        # Using the newest Llama 3.2 90B Vision model
         completion = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            model=ACTIVE_MODEL,
             messages=[
                 {
                     "role": "user",

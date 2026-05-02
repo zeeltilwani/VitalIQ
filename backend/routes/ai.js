@@ -25,6 +25,8 @@ router.post('/identify', upload.single('image'), async (req, res) => {
 
         let detectedLabel = 'Unknown';
         let confidence = 0;
+        let calories = 0;
+        let aiMacros = null;
 
         // 1. Try Python ML Model
         try {
@@ -36,6 +38,7 @@ router.post('/identify', upload.single('image'), async (req, res) => {
                 detectedLabel = aiRes.data.label;
                 confidence = aiRes.data.confidence || 0.5;
                 calories = aiRes.data.calories || 100;
+                aiMacros = aiRes.data.macros;
                 console.log(`[AI] Model returned: ${detectedLabel} (${calories} kcal)`);
             }
         } catch (aiErr) {
@@ -62,11 +65,18 @@ router.post('/identify', upload.single('image'), async (req, res) => {
             return res.json({ success: false, error: "Please try a clearer picture." });
         }
 
-        // Estimate macros based on standard distribution (20% protein, 50% carbs, 30% fat)
-        // 1g Protein = 4 kcal, 1g Carbs = 4 kcal, 1g Fat = 9 kcal
-        const protein = Math.round((finalCalories * 0.20) / 4);
-        const carbs = Math.round((finalCalories * 0.50) / 4);
-        const fat = Math.round((finalCalories * 0.30) / 9);
+        // 3. Macros Resolution (Priority: AI > Calculated Fallback)
+        let protein, carbs, fat;
+        if (aiMacros && aiMacros.protein !== undefined) {
+            protein = aiMacros.protein;
+            carbs = aiMacros.carbs;
+            fat = aiMacros.fat;
+        } else {
+            // Fallback distribution (20% protein, 50% carbs, 30% fat)
+            protein = Math.round((finalCalories * 0.20) / 4);
+            carbs = Math.round((finalCalories * 0.50) / 4);
+            fat = Math.round((finalCalories * 0.30) / 9);
+        }
 
         return res.json({
             success: true,

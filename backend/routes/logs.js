@@ -26,15 +26,19 @@ router.post('/food', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Food name is required' });
         }
 
-        // Part 3: Food Validation & Fuzzy Matching
-        const calorieResult = estimateCalories(foodName);
-        if (calorieResult && typeof calorieResult === 'object' && calorieResult.error) {
-            // DO NOT log if food not recognized
-            console.log(`[Logs] Blocked logging of unrecognized food: "${foodName}"`);
-            return res.status(400).json({ success: false, error: "Food not recognized in our database. Please try a different name." });
+        // Part 3: Food Validation & Calorie Resolution
+        let calories = req.body.calories;
+        
+        if (calories === undefined || calories === null) {
+            const calorieResult = estimateCalories(foodName);
+            if (calorieResult && typeof calorieResult === 'object' && calorieResult.error) {
+                // DO NOT log if food not recognized and no calories provided
+                console.log(`[Logs] Blocked logging of unrecognized food: "${foodName}"`);
+                return res.status(400).json({ success: false, error: "Food not recognized in our database. Please try a different name." });
+            }
+            calories = typeof calorieResult === 'number' ? calorieResult : 0;
         }
 
-        let calories = typeof calorieResult === 'number' ? calorieResult : 0;
         if (portionMultiplier !== 1) {
             calories = Math.round(calories * portionMultiplier);
         }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StatusBar, StyleSheet } from 'react-native';
-import { Home, Salad, Dumbbell, User } from 'lucide-react-native';
+import { Home, Salad, Dumbbell, User, ClipboardList } from 'lucide-react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -82,7 +82,7 @@ function TabIcon({ name, focused, theme }) {
     if (name === 'Diet Plans') {
         return (
             <View style={styles.iconWrapper}>
-                <Salad size={size} color={color} strokeWidth={strokeWidth} />
+                <ClipboardList size={size} color={color} strokeWidth={strokeWidth} />
             </View>
         );
     }

@@ -3,13 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONT, SHADOW } from '../theme';
+import { Image } from 'react-native';
+import { DIET_IMAGES } from '../assets/diet';
 
 const PLANS = [
     {
         id: 1,
         title: 'Weight Loss Plan',
         desc: 'Balanced caloric deficit for steady, sustainable fat loss.',
-        icon: '🔥',
+        image: DIET_IMAGES.weight_loss,
         category: 'Fat Loss',
         duration: '8 Weeks',
         meals: [
@@ -26,7 +28,7 @@ const PLANS = [
         id: 2,
         title: 'Weight Gain Plan',
         desc: 'High-calorie, nutrient-dense meals for healthy mass gain.',
-        icon: '💪',
+        image: DIET_IMAGES.weight_gain,
         category: 'Mass Gain',
         duration: '12 Weeks',
         meals: [
@@ -43,7 +45,7 @@ const PLANS = [
         id: 3,
         title: 'High Protein Diet',
         desc: 'Maximize daily protein to support muscle repair and growth.',
-        icon: '🥩',
+        image: DIET_IMAGES.high_protein,
         category: 'Performance',
         duration: '6 Weeks',
         meals: [
@@ -60,7 +62,7 @@ const PLANS = [
         id: 4,
         title: 'Vegetarian Plan',
         desc: 'Complete nutrition through plant-based and dairy sources.',
-        icon: '🥗',
+        image: DIET_IMAGES.vegetarian,
         category: 'Vegetarian',
         duration: '4 Weeks',
         meals: [
@@ -77,7 +79,7 @@ const PLANS = [
         id: 5,
         title: 'Non-Veg Muscle Plan',
         desc: 'Lean animal protein focused plan for serious muscle building.',
-        icon: '🍗',
+        image: DIET_IMAGES.non_veg_muscle,
         category: 'Muscle Building',
         duration: '10 Weeks',
         meals: [
@@ -113,32 +115,31 @@ const DietCard = ({ plan, index, navigation, theme }) => {
                 style={[
                     styles.card,
                     { 
-                        backgroundColor: theme.surface, 
-                        borderColor: theme.border,
-                        shadowColor: theme.shadow
+                        backgroundColor: '#111', 
+                        borderColor: '#222',
                     }
                 ]}
             >
-                <View style={[styles.iconBox, { backgroundColor: theme.primaryLight }]}>
-                    <Text style={styles.iconText}>{plan.icon}</Text>
+                <View style={styles.planImageContainer}>
+                    <Image source={plan.image} style={styles.planImage} />
                 </View>
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                        <Text style={[styles.cardTitle, { color: theme.text }]}>{plan.title}</Text>
-                        <View style={[styles.catBadge, { backgroundColor: theme.surfaceLight }]}>
-                            <Text style={[styles.catText, { color: theme.textSecondary }]}>{plan.category}</Text>
+                        <Text style={[styles.cardTitle, { color: '#fff' }]}>{plan.title}</Text>
+                        <View style={[styles.catBadge, { backgroundColor: '#222' }]}>
+                            <Text style={[styles.catText, { color: theme.primary }]}>{plan.category}</Text>
                         </View>
                     </View>
-                    <Text style={[styles.cardDesc, { color: theme.textSecondary }]} numberOfLines={2}>
+                    <Text style={[styles.cardDesc, { color: '#666' }]} numberOfLines={2}>
                         {plan.desc}
                     </Text>
                     <View style={styles.metaRow}>
-                        <Text style={[styles.metaText, { color: theme.primary }]}>🔥 {plan.totalCalories} kcal</Text>
-                        <Text style={[styles.metaDivider, { color: theme.border }]}>|</Text>
-                        <Text style={[styles.metaText, { color: theme.textSecondary }]}>🗓️ {plan.duration}</Text>
+                        <Image source={DIET_IMAGES.kcal_icon} style={styles.kcalMiniIcon} />
+                        <Text style={[styles.metaText, { color: theme.primary }]}>{plan.totalCalories} kcal</Text>
+                        <Text style={[styles.metaDivider, { color: '#333' }]}>|</Text>
+                        <Text style={[styles.metaText, { color: '#666' }]}>🗓️ {plan.duration}</Text>
                     </View>
                 </View>
-                <Text style={[styles.arrow, { color: theme.border }]}>›</Text>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -173,29 +174,29 @@ const styles = StyleSheet.create({
     headerSub: { fontSize: FONT.sm, marginBottom: SPACING.xxl, marginTop: 4, fontWeight: '500' },
 
     card: {
-        padding: SPACING.lg, 
+        padding: 12, 
         borderRadius: RADIUS.xl,
         flexDirection: 'row', 
         alignItems: 'center',
         borderWidth: 1,
-        ...SHADOW.sm,
+        marginBottom: SPACING.md,
     },
-    iconBox: {
-        width: 60, height: 60,
+    planImageContainer: {
+        width: 70, height: 70,
         borderRadius: RADIUS.lg, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        marginRight: SPACING.lg,
+        overflow: 'hidden',
+        marginRight: SPACING.md,
+        backgroundColor: '#1A1A1A'
     },
-    iconText: { fontSize: 30 },
+    planImage: { width: '100%', height: '100%', resizeMode: 'cover' },
     cardContent: { flex: 1 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-    cardTitle: { fontSize: FONT.md, fontWeight: '800' },
+    cardTitle: { fontSize: 16, fontWeight: '800' },
     catBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-    catText: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+    catText: { fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' },
     cardDesc: { fontSize: 13, lineHeight: 18, marginBottom: 8 },
     metaRow: { flexDirection: 'row', alignItems: 'center' },
+    kcalMiniIcon: { width: 14, height: 14, marginRight: 4 },
     metaText: { fontSize: 12, fontWeight: 'bold' },
     metaDivider: { marginHorizontal: 8 },
-    arrow: { fontSize: 24, fontWeight: '300', marginLeft: SPACING.sm },
 });

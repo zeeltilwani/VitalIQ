@@ -115,6 +115,8 @@ export default function CameraScreen({ route, navigation }) {
         navigation.navigate('Log Food', {
             prefill: prediction.label,
             mealType: detectedMeal,
+            calories: prediction.calories,
+            macros: prediction.macros,
             user,
         });
     };

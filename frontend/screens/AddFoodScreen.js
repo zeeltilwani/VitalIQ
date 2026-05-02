@@ -27,7 +27,7 @@ const PORTIONS = [
 ];
 
 export default function AddFoodScreen({ route, navigation }) {
-    const { user, prefill, mealType: initialMeal } = route.params || {};
+    const { user, prefill, mealType: initialMeal, calories: prefilledCalories, macros: prefilledMacros } = route.params || {};
     const insets = useSafeAreaInsets();
     const { theme } = useTheme();
 
@@ -57,6 +57,8 @@ export default function AddFoodScreen({ route, navigation }) {
                 foodName: fullName,
                 mealType: mealType,
                 portionMultiplier: portion,
+                calories: prefilledCalories,
+                macros: prefilledMacros,
             });
 
             if (!res || !res.data) {
