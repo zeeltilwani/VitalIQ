@@ -3,9 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator,
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
-import { SPACING, RADIUS, FONT } from '../theme';
+import { SPACING, RADIUS, FONT, COLORS, SHADOW } from '../theme';
 import api from '../api';
 import { useTheme } from '../context/ThemeContext';
+import PressableButton from '../components/PressableButton';
+import { 
+    Salad, Microscope, Rocket, Calendar, MapPin, Scale, 
+    Users, Target, Trophy, Zap, Stethoscope, CheckCircle,
+    ChevronLeft, ChevronRight
+} from 'lucide-react-native';
 
 const SLIDES = 12;
 
@@ -169,13 +175,13 @@ export default function OnboardingScreen({ route, navigation }) {
 
     const renderSlide = () => {
         switch(step) {
-            case 1: return <View style={styles.slide}><Text style={styles.icon}>🥗</Text><Text style={[styles.title, { color: theme.text }]}>Clean Fuel</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>Precision calorie tracking for your unique physiology.</Text></View>;
-            case 2: return <View style={styles.slide}><Text style={styles.icon}>🔬</Text><Text style={[styles.title, { color: theme.text }]}>Validated Stats</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>We use production-grade health metrics to calculate your blueprint.</Text></View>;
-            case 3: return <View style={styles.slide}><Text style={styles.icon}>🚀</Text><Text style={[styles.title, { color: theme.text }]}>Zero Friction</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>Automated logging. Intelligent scanning. Real results.</Text></View>;
+            case 1: return <View style={styles.slide}><Salad size={80} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.title, { color: theme.text }]}>Clean Fuel</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>Precision calorie tracking for your unique physiology.</Text></View>;
+            case 2: return <View style={styles.slide}><Microscope size={80} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.title, { color: theme.text }]}>Validated Stats</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>We use production-grade health metrics to calculate your blueprint.</Text></View>;
+            case 3: return <View style={styles.slide}><Rocket size={80} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.title, { color: theme.text }]}>Zero Friction</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>Automated logging. Intelligent scanning. Real results.</Text></View>;
             
             case 4: return (
                 <View style={styles.slide}>
-                    <Text style={styles.qIcon}>📅</Text>
+                    <Calendar size={60} color={theme.primary} style={{marginBottom: 20}} />
                     <Text style={[styles.qTitle, { color: theme.text }]}>Birth Date</Text>
                     <TouchableOpacity style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => setShowDatePicker(true)}>
                         <Text style={[styles.inputText, { color: theme.text }]}>{dob.toDateString()}</Text>
@@ -187,7 +193,7 @@ export default function OnboardingScreen({ route, navigation }) {
             
             case 5: return (
                 <View style={styles.slide}>
-                    <Text style={styles.qIcon}>📍</Text>
+                    <MapPin size={60} color={theme.primary} style={{marginBottom: 20}} />
                     <Text style={[styles.qTitle, { color: theme.text }]}>Where do you live?</Text>
                     <TextInput 
                         style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} 
@@ -206,7 +212,7 @@ export default function OnboardingScreen({ route, navigation }) {
 
             case 6: return (
                 <View style={styles.slide}>
-                    <Text style={styles.qIcon}>⚖️</Text>
+                    <Scale size={60} color={theme.primary} style={{marginBottom: 20}} />
                     <Text style={[styles.qTitle, { color: theme.text }]}>Physical Metrics</Text>
                     <TextInput 
                         style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} 
@@ -232,12 +238,12 @@ export default function OnboardingScreen({ route, navigation }) {
                 </View>
             );
 
-            case 7: return <View style={styles.slide}><Text style={styles.qIcon}>🚻</Text><Text style={[styles.qTitle, { color: theme.text }]}>Gender</Text><SelectionBtn label="Male" selectedVal={gender} setVal={setGender} /><SelectionBtn label="Female" selectedVal={gender} setVal={setGender} /></View>;
-            case 8: return <View style={styles.slide}><Text style={styles.qIcon}>🎯</Text><Text style={[styles.qTitle, { color: theme.text }]}>Main Strategy</Text><SelectionBtn label="Weight Loss" selectedVal={goal} setVal={setGoal} /><SelectionBtn label="Muscle Gain" selectedVal={goal} setVal={setGoal} /><SelectionBtn label="Maintain" selectedVal={goal} setVal={setGoal} /></View>;
+            case 7: return <View style={styles.slide}><Users size={60} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.qTitle, { color: theme.text }]}>Gender</Text><SelectionBtn label="Male" selectedVal={gender} setVal={setGender} /><SelectionBtn label="Female" selectedVal={gender} setVal={setGender} /></View>;
+            case 8: return <View style={styles.slide}><Target size={60} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.qTitle, { color: theme.text }]}>Main Strategy</Text><SelectionBtn label="Weight Loss" selectedVal={goal} setVal={setGoal} /><SelectionBtn label="Muscle Gain" selectedVal={goal} setVal={setGoal} /><SelectionBtn label="Maintain" selectedVal={goal} setVal={setGoal} /></View>;
             
             case 9: return (
                 <View style={styles.slide}>
-                    <Text style={styles.qIcon}>🏅</Text>
+                    <Trophy size={60} color={theme.primary} style={{marginBottom: 20}} />
                     <Text style={[styles.qTitle, { color: theme.text }]}>Target Weight (kg)</Text>
                     <Text style={[styles.hint, { color: theme.textSecondary }]}>Current: {weight} kg | Goal: {goal}</Text>
                     <TextInput 
@@ -256,7 +262,7 @@ export default function OnboardingScreen({ route, navigation }) {
 
             case 10: return (
                 <View style={styles.slide}>
-                    <Text style={styles.qIcon}>⚡</Text>
+                    <Zap size={60} color={theme.primary} style={{marginBottom: 20}} />
                     <Text style={[styles.qTitle, { color: theme.text }]}>Daily Activity</Text>
                     <SelectionBtn label="Sedentary" selectedVal={activityLevel} setVal={setActivityLevel} />
                     <SelectionBtn label="Moderate" selectedVal={activityLevel} setVal={setActivityLevel} />
@@ -264,8 +270,8 @@ export default function OnboardingScreen({ route, navigation }) {
                 </View>
             );
 
-            case 11: return <View style={styles.slide}><Text style={styles.qIcon}>🩺</Text><Text style={[styles.qTitle, { color: theme.text }]}>Medical Status</Text><TextInput style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} value={medical} onChangeText={setMedical} placeholder="Any conditions? (e.g. None)" placeholderTextColor={theme.textSecondary} /></View>;
-            case 12: return <View style={styles.slide}><Text style={styles.qIcon}>✅</Text><Text style={[styles.qTitle, { color: theme.text }]}>Validation Success</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>We've verified all metrics. Ready to generate your health blueprint.</Text></View>;
+            case 11: return <View style={styles.slide}><Stethoscope size={60} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.qTitle, { color: theme.text }]}>Medical Status</Text><TextInput style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} value={medical} onChangeText={setMedical} placeholder="Any conditions? (e.g. None)" placeholderTextColor={theme.textSecondary} /></View>;
+            case 12: return <View style={styles.slide}><CheckCircle size={60} color={theme.primary} style={{marginBottom: 20}} /><Text style={[styles.qTitle, { color: theme.text }]}>Validation Success</Text><Text style={[styles.desc, { color: theme.textSecondary }]}>We've verified all metrics. Ready to generate your health blueprint.</Text></View>;
             default: return null;
         }
     };
@@ -274,11 +280,14 @@ export default function OnboardingScreen({ route, navigation }) {
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => step > 1 && setStep(step - 1)} style={{ opacity: step > 1 ? 1 : 0 }}>
-                        <Text style={[styles.headerText, { color: theme.textSecondary }]}>← Back</Text>
-                    </TouchableOpacity>
+                    <PressableButton
+                        variant="ghost"
+                        icon={<ChevronLeft size={24} color={theme.textSecondary} />}
+                        onPress={() => step > 1 && setStep(step - 1)}
+                        style={{ opacity: step > 1 ? 1 : 0 }}
+                    />
                     <Text style={[styles.progress, { color: theme.primary }]}>{step}/{SLIDES}</Text>
-                    <View style={{width: 50}} />
+                    <View style={{width: 44}} />
                 </View>
 
                 <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
@@ -288,12 +297,15 @@ export default function OnboardingScreen({ route, navigation }) {
                 </Animated.View>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity 
-                        style={[styles.nextBtn, { backgroundColor: theme.primary }, !isStepValid() && { opacity: 0.5 }]} 
+                    <PressableButton
+                        label={step === SLIDES ? "Launch Profile" : "Continue"}
+                        icon={step === SLIDES ? <CheckCircle size={20} color="#fff" /> : <ChevronRight size={20} color="#fff" />}
                         onPress={nextStep}
-                    >
-                        {loading ? <ActivityIndicator color={theme.textInverse} /> : <Text style={[styles.nextText, { color: theme.textInverse }]}>{step === SLIDES ? "Launch Profile" : "Continue"}</Text>}
-                    </TouchableOpacity>
+                        loading={loading}
+                        disabled={!isStepValid()}
+                        size="lg"
+                        style={{ width: '100%' }}
+                    />
                 </View>
             </KeyboardAvoidingView>
         </View>

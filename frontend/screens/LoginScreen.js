@@ -8,6 +8,7 @@ import { SPACING, RADIUS, FONT } from '../theme';
 import api from '../api';
 import { useTheme } from '../context/ThemeContext';
 import PressableButton from '../components/PressableButton';
+import { Eye, EyeOff, LogIn, Leaf } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }) {
     const { theme, loadTheme } = useTheme();
@@ -53,10 +54,10 @@ export default function LoginScreen({ navigation }) {
             color: theme.text,
             borderColor: focused ? theme.primary : theme.border,
             shadowColor: focused ? theme.primary : 'transparent',
-            shadowOpacity: focused ? 0.25 : 0,
-            shadowRadius: focused ? 6 : 0,
+            shadowOpacity: focused ? 0.1 : 0,
+            shadowRadius: focused ? 4 : 0,
             shadowOffset: { width: 0, height: 0 },
-            elevation: focused ? 4 : 0,
+            elevation: 2,
         },
     ];
 
@@ -67,7 +68,7 @@ export default function LoginScreen({ navigation }) {
 
                     {/* Branding */}
                     <View style={styles.header}>
-                        <Text style={styles.logo}>🍃</Text>
+                        <Leaf size={60} color={theme.primary} style={{ marginBottom: SPACING.sm }} />
                         <Text style={[styles.title, { color: theme.text }]}>VitalIQ</Text>
                         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Your personal health companion</Text>
                     </View>
@@ -97,10 +98,10 @@ export default function LoginScreen({ navigation }) {
                                     backgroundColor: theme.surface,
                                     borderColor: passwordFocused ? theme.primary : theme.border,
                                     shadowColor: passwordFocused ? theme.primary : 'transparent',
-                                    shadowOpacity: passwordFocused ? 0.25 : 0,
-                                    shadowRadius: passwordFocused ? 6 : 0,
+                                    shadowOpacity: passwordFocused ? 0.1 : 0,
+                                    shadowRadius: passwordFocused ? 4 : 0,
                                     shadowOffset: { width: 0, height: 0 },
-                                    elevation: passwordFocused ? 4 : 0,
+                                    elevation: 2,
                                 },
                             ]}
                         >
@@ -109,6 +110,9 @@ export default function LoginScreen({ navigation }) {
                                 placeholder="Enter your password"
                                 placeholderTextColor={theme.textSecondary}
                                 secureTextEntry={!showPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                textContentType="password"
                                 value={password}
                                 onChangeText={setPassword}
                                 onFocus={() => setPasswordFocused(true)}
@@ -116,7 +120,7 @@ export default function LoginScreen({ navigation }) {
                             />
                             <PressableButton
                                 variant="ghost"
-                                icon={showPassword ? '🙈' : '👁️'}
+                                icon={showPassword ? <EyeOff size={20} color={theme.textSecondary} /> : <Eye size={20} color={theme.textSecondary} />}
                                 onPress={() => setShowPassword(prev => !prev)}
                                 style={{ paddingHorizontal: SPACING.md }}
                             />
@@ -125,6 +129,7 @@ export default function LoginScreen({ navigation }) {
                         {/* Sign In CTA */}
                         <PressableButton
                             label="Sign In"
+                            icon={<LogIn size={20} color="#fff" />}
                             onPress={handleLogin}
                             loading={loading}
                             disabled={loading}

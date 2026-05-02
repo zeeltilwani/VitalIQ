@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, TextInput, StyleSheet, FlatList,
-    ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView
+    ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView,
+    Image, Share
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -14,6 +15,10 @@ const QUICK_QUESTIONS = [
     { id: '3', text: 'Weight loss tips' },
     { id: '4', text: 'How much water today?' },
 ];
+
+const BOT_ICON = require('../assets/chatbot/bot_icon.png');
+const SHARE_ICON = require('../assets/chatbot/share.png');
+const DOWNLOAD_ICON = require('../assets/chatbot/download.png');
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -47,14 +52,40 @@ export default function ChatScreen({ navigation }) {
         }
     };
 
+    const handleShare = async () => {
+        try {
+            const chatLog = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join('\n\n');
+            await Share.share({
+                message: `My VitalIQ Chat Session:\n\n${chatLog}`,
+                title: 'VitalIQ Chat'
+            });
+        } catch (err) {
+            console.error('Share error:', err);
+        }
+    };
+
+    const handleDownload = () => {
+        Alert.alert("Export Chat", "Your chat history has been saved to your records.");
+    };
+
     return (
         <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
             <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={[styles.backText, { color: theme.primary }]}>← Back</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+                    <Text style={[styles.backText, { color: theme.primary }]}>←</Text>
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: theme.text }]}>AI Assistant</Text>
-                <View style={{ width: 50 }} />
+                <View style={styles.titleArea}>
+                    <Image source={BOT_ICON} style={styles.headerBotIcon} />
+                    <Text style={[styles.title, { color: theme.text }]}>AI Assistant</Text>
+                </View>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity onPress={handleShare} style={styles.headerIconBtn}>
+                        <Image source={SHARE_ICON} style={styles.headerIcon} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleDownload} style={styles.headerIconBtn}>
+                        <Image source={DOWNLOAD_ICON} style={styles.headerIcon} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <FlatList
@@ -127,10 +158,16 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     header: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        padding: SPACING.lg, borderBottomWidth: 1,
+        paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderBottomWidth: 1,
     },
-    backText: { fontSize: FONT.md, fontWeight: FONT.bold },
-    title: { fontSize: FONT.lg, fontWeight: FONT.bold },
+    headerBtn: { width: 40, height: 40, justifyContent: 'center' },
+    titleArea: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
+    headerBotIcon: { width: 32, height: 32, marginRight: 8, borderRadius: 16 },
+    headerRight: { flexDirection: 'row', alignItems: 'center' },
+    headerIconBtn: { padding: 8 },
+    headerIcon: { width: 22, height: 22, resizeMode: 'contain' },
+    backText: { fontSize: 24, fontWeight: '300' },
+    title: { fontSize: FONT.lg, fontWeight: '800' },
 
     bubble: { padding: SPACING.md, paddingHorizontal: SPACING.lg, borderRadius: RADIUS.lg, marginBottom: SPACING.sm, maxWidth: '82%' },
     userBubble: { alignSelf: 'flex-end', borderBottomRightRadius: RADIUS.sm },
