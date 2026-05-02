@@ -1,4 +1,4 @@
-	{
+{
   "name": "vitaliq-root",
   "version": "1.0.0",
   "private": true,
@@ -7,7 +7,7 @@
 
     "setup:backend": "cd backend && npm install",
     "setup:frontend": "cd frontend && npm install",
-    "setup:ai": "cd ai_service && python3 -m venv venv && ./venv/bin/pip install fastapi uvicorn groq python-dotenv pillow python-multipart requests",
+    "setup:ai": "cd ai_service && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt",
 
     "start": "concurrently \"npm run start:backend\" \"npm run start:ai\" \"npm run start:frontend\"",
 
