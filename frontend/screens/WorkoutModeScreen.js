@@ -122,7 +122,7 @@ export default function WorkoutModeScreen({ route, navigation }) {
         : getExerciseAsset(currentExercise?.gifName); // Safe fallback using registry
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
+        <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top, paddingBottom: insets.bottom + 25 }]}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
@@ -191,7 +191,14 @@ export default function WorkoutModeScreen({ route, navigation }) {
                 </View>
 
                 {/* Footer Controls */}
-                <View style={styles.footer}>
+                <View style={[styles.footer, {
+                    position: 'absolute',
+                    bottom: insets.bottom + 12,
+                    left: 0,
+                    right: 0,
+                    paddingHorizontal: SPACING.xl,
+                    marginBottom: insets.bottom > 0 ? 10 : 0,
+                }]}>
                     {isResting ? (
                         <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.accent }]} onPress={skipRest}>
                             <Text style={[styles.mainBtnText, { color: theme.textInverse }]}>Skip Rest ⏭</Text>
@@ -221,7 +228,7 @@ const styles = StyleSheet.create({
     progressTrack: { height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' },
     progressFill: { height: '100%' },
     
-    content: { flex: 1, paddingHorizontal: SPACING.xl, justifyContent: 'space-around', paddingBottom: 40 },
+    content: { flex: 1, paddingHorizontal: SPACING.xl, justifyContent: 'space-around', paddingBottom: 120 },
     
     visualContainer: { alignItems: 'center', marginTop: SPACING.md },
     pulseCircle: {

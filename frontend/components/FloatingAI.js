@@ -55,7 +55,7 @@ const QUICK_QUESTIONS = [
 ];
 
 export default function FloatingAI() {
-    const { theme } = useTheme();
+    const { theme, isDarkMode } = useTheme();
     const [visible, setVisible] = useState(false);
     const [messages, setMessages] = useState([
         { role: 'bot', text: "Hi! 👋 I'm your VitalIQ health assistant.\nTap a question below to get started!" },
@@ -97,14 +97,18 @@ export default function FloatingAI() {
             style={[
                 styles.bubble,
                 item.role === 'user'
-                    ? [styles.userBubble, { backgroundColor: theme.primary }]
-                    : [styles.botBubble, { backgroundColor: theme.surface, borderColor: theme.border }],
+                    ? [styles.userBubble, { backgroundColor: isDarkMode ? theme.primary : '#22C55E' }]
+                    : [styles.botBubble, { 
+                        backgroundColor: isDarkMode ? theme.surface : '#FFFFFF', 
+                        borderColor: isDarkMode ? theme.border : '#E5E7EB',
+                        ...(isDarkMode ? {} : { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width:0, height:2 }, elevation: 2 })
+                    }],
             ]}
         >
             <Text
                 style={[
                     styles.bubbleText,
-                    { color: item.role === 'user' ? '#FFFFFF' : theme.text },
+                    { color: item.role === 'user' ? '#FFFFFF' : (isDarkMode ? theme.text : '#111827') },
                 ]}
             >
                 {item.text}
@@ -117,7 +121,10 @@ export default function FloatingAI() {
             {/* Floating Action Button */}
             <Animated.View style={[styles.fabContainer, { transform: [{ scale: scaleAnim }] }]}>
                 <TouchableOpacity
-                    style={[styles.fab, { backgroundColor: theme.primary }]}
+                    style={[styles.fab, { 
+                        backgroundColor: isDarkMode ? theme.primary : '#22C55E',
+                        ...(isDarkMode ? {} : { shadowColor: '#22C55E', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width:0, height:4 }, elevation: 5 })
+                    }]}
                     onPress={toggleChat}
                     activeOpacity={0.8}
                 >
@@ -132,14 +139,14 @@ export default function FloatingAI() {
             {/* Chat Modal */}
             <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: theme.bg }]}>
+                    <View style={[styles.modalContent, { backgroundColor: isDarkMode ? theme.bg : '#F7F8FC' }]}>
                         {/* Header */}
-                        <View style={[styles.modalHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+                        <View style={[styles.modalHeader, { backgroundColor: isDarkMode ? theme.surface : '#FFFFFF', borderBottomColor: isDarkMode ? theme.border : '#E5E7EB' }]}>
                             <View style={styles.headerTitleRow}>
                                 <Image source={BOT_ICON} style={styles.headerBotIcon} />
                                 <View>
-                                    <Text style={[styles.modalTitle, { color: theme.text }]}>VitalIQ Assistant</Text>
-                                    <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
+                                    <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#111827' }]}>VitalIQ Assistant</Text>
+                                    <Text style={[styles.modalSubtitle, { color: isDarkMode ? theme.textSecondary : '#6B7280' }]}>
                                         Tap a question to get instant answers
                                     </Text>
                                 </View>
@@ -147,15 +154,15 @@ export default function FloatingAI() {
                             <View style={styles.headerActions}>
                                 <TouchableOpacity
                                     onPress={handleReset}
-                                    style={[styles.headerBtn, { backgroundColor: theme.surfaceLight }]}
+                                    style={[styles.headerBtn, { backgroundColor: isDarkMode ? theme.surfaceLight : '#F3F4F6' }]}
                                 >
                                     <Text style={{ fontSize: 16 }}>🔄</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => setVisible(false)}
-                                    style={[styles.headerBtn, { backgroundColor: theme.surfaceLight }]}
+                                    style={[styles.headerBtn, { backgroundColor: isDarkMode ? theme.surfaceLight : '#F3F4F6' }]}
                                 >
-                                    <Text style={[styles.closeBtnText, { color: theme.textSecondary }]}>✕</Text>
+                                    <Text style={[styles.closeBtnText, { color: isDarkMode ? theme.textSecondary : '#6B7280' }]}>✕</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -171,8 +178,8 @@ export default function FloatingAI() {
                             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                             ListFooterComponent={
                                 showQuestions ? (
-                                    <View style={[styles.questionsContainer, { borderTopColor: theme.border }]}>
-                                        <Text style={[styles.questionsLabel, { color: theme.textSecondary }]}>
+                                    <View style={[styles.questionsContainer, { borderTopColor: isDarkMode ? theme.border : '#E5E7EB' }]}>
+                                        <Text style={[styles.questionsLabel, { color: isDarkMode ? theme.textSecondary : '#6B7280' }]}>
                                             Quick Questions
                                         </Text>
                                         {QUICK_QUESTIONS.map(q => (
@@ -180,12 +187,12 @@ export default function FloatingAI() {
                                                 key={q.id}
                                                 style={[
                                                     styles.questionBtn,
-                                                    { backgroundColor: theme.surface, borderColor: theme.border },
+                                                    { backgroundColor: isDarkMode ? theme.surface : '#FFFFFF', borderColor: isDarkMode ? theme.border : '#E5E7EB' },
                                                 ]}
                                                 onPress={() => handleQuestionTap(q)}
                                                 activeOpacity={0.7}
                                             >
-                                                <Text style={[styles.questionText, { color: theme.text }]}>
+                                                <Text style={[styles.questionText, { color: isDarkMode ? theme.text : '#111827' }]}>
                                                     {q.question}
                                                 </Text>
                                             </TouchableOpacity>

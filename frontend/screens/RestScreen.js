@@ -56,7 +56,7 @@ export default function RestScreen({ route, navigation }) {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
+        <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top, paddingBottom: insets.bottom + 25 }]}>
             <View style={styles.content}>
                 <Text style={[styles.title, { color: theme.primary }]}>REST</Text>
                 
@@ -77,15 +77,22 @@ export default function RestScreen({ route, navigation }) {
                     </Text>
                 </View>
 
-                <View style={styles.footer}>
-                    <TouchableOpacity 
-                        style={[styles.skipBtn, { borderColor: theme.primary }]} 
-                        onPress={handleFinishRest}
-                    >
+            </View>
+
+            <View style={[styles.footer, {
+                position: 'absolute',
+                bottom: insets.bottom + 12,
+                left: 0,
+                right: 0,
+                marginBottom: insets.bottom > 0 ? 10 : 0,
+            }]}>
+                <TouchableOpacity 
+                    style={[styles.skipBtn, { borderColor: theme.primary }]} 
+                    onPress={handleFinishRest}
+                >
                         <ChevronLast size={32} color={theme.primary} />
                         <Text style={[styles.skipBtnLabel, { color: '#fff' }]}>Skip Rest</Text>
-                    </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -93,7 +100,7 @@ export default function RestScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    content: { flex: 1, padding: SPACING.xl, justifyContent: 'center', alignItems: 'center' },
+    content: { flex: 1, padding: SPACING.xl, justifyContent: 'center', alignItems: 'center', paddingBottom: 150 },
     title: { fontSize: 40, fontWeight: '900', letterSpacing: 4, marginBottom: SPACING.xxxl },
     timerWrapper: { alignItems: 'center', marginBottom: 60 },
     timerValue: { fontSize: 120, fontWeight: '900', fontVariant: ['tabular-nums'] },

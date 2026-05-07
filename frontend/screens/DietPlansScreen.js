@@ -94,7 +94,7 @@ const PLANS = [
     },
 ];
 
-const DietCard = ({ plan, index, navigation, theme }) => {
+const DietCard = ({ plan, index, navigation, theme, isDarkMode }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -115,29 +115,30 @@ const DietCard = ({ plan, index, navigation, theme }) => {
                 style={[
                     styles.card,
                     { 
-                        backgroundColor: '#111', 
-                        borderColor: '#222',
+                        backgroundColor: isDarkMode ? '#111827' : '#FFFFFF', 
+                        borderColor: isDarkMode ? '#222' : '#E5E7EB',
+                        ...(isDarkMode ? {} : { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width:0, height:4 }, elevation: 4 })
                     }
                 ]}
             >
-                <View style={styles.planImageContainer}>
+                <View style={[styles.planImageContainer, { backgroundColor: isDarkMode ? '#1A1A1A' : '#F3F4F6' }]}>
                     <Image source={plan.image} style={styles.planImage} />
                 </View>
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                        <Text style={[styles.cardTitle, { color: '#fff' }]}>{plan.title}</Text>
-                        <View style={[styles.catBadge, { backgroundColor: '#222' }]}>
-                            <Text style={[styles.catText, { color: theme.primary }]}>{plan.category}</Text>
+                        <Text style={[styles.cardTitle, { color: isDarkMode ? '#fff' : '#111827' }]}>{plan.title}</Text>
+                        <View style={[styles.catBadge, { backgroundColor: isDarkMode ? '#222' : '#22C55E' }]}>
+                            <Text style={[styles.catText, { color: isDarkMode ? theme.primary : '#FFFFFF' }]}>{plan.category}</Text>
                         </View>
                     </View>
-                    <Text style={[styles.cardDesc, { color: '#666' }]} numberOfLines={2}>
+                    <Text style={[styles.cardDesc, { color: isDarkMode ? '#666' : '#6B7280' }]} numberOfLines={2}>
                         {plan.desc}
                     </Text>
                     <View style={styles.metaRow}>
                         <Image source={DIET_IMAGES.kcal_icon} style={styles.kcalMiniIcon} />
-                        <Text style={[styles.metaText, { color: theme.primary }]}>{plan.totalCalories} kcal</Text>
-                        <Text style={[styles.metaDivider, { color: '#333' }]}>|</Text>
-                        <Text style={[styles.metaText, { color: '#666' }]}>🗓️ {plan.duration}</Text>
+                        <Text style={[styles.metaText, { color: isDarkMode ? theme.primary : '#22C55E' }]}>{plan.totalCalories} kcal</Text>
+                        <Text style={[styles.metaDivider, { color: isDarkMode ? '#333' : '#E5E7EB' }]}>|</Text>
+                        <Text style={[styles.metaText, { color: isDarkMode ? '#666' : '#6B7280' }]}>🗓️ {plan.duration}</Text>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -147,18 +148,18 @@ const DietCard = ({ plan, index, navigation, theme }) => {
 
 export default function DietPlansScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const { theme } = useTheme();
+    const { theme, isDarkMode } = useTheme();
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? theme.bg : '#F7F8FC' }]}>
             <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Diet Plans</Text>
-                <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
+                <Text style={[styles.headerTitle, { color: isDarkMode ? theme.text : '#111827' }]}>Diet Plans</Text>
+                <Text style={[styles.headerSub, { color: isDarkMode ? theme.textSecondary : '#6B7280' }]}>
                     Scientifically curated nutrition for your goals
                 </Text>
 
                 {PLANS.map((plan, index) => (
-                    <DietCard key={plan.id} plan={plan} index={index} navigation={navigation} theme={theme} />
+                    <DietCard key={plan.id} plan={plan} index={index} navigation={navigation} theme={theme} isDarkMode={isDarkMode} />
                 ))}
 
                 <View style={{ height: 100 }} />
@@ -186,7 +187,6 @@ const styles = StyleSheet.create({
         borderRadius: RADIUS.lg, 
         overflow: 'hidden',
         marginRight: SPACING.md,
-        backgroundColor: '#1A1A1A'
     },
     planImage: { width: '100%', height: '100%', resizeMode: 'cover' },
     cardContent: { flex: 1 },

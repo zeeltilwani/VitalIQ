@@ -19,7 +19,7 @@ const GLASS_GOAL = 8;
 export default function Dashboard({ route, navigation }) {
     const isFocused = useIsFocused();
     const insets = useSafeAreaInsets();
-    const { theme } = useTheme();
+    const { theme, isDarkMode } = useTheme();
 
     const [user, setUser] = useState(route.params?.user || null);
     const [loading, setLoading] = useState(true);
@@ -87,7 +87,7 @@ export default function Dashboard({ route, navigation }) {
     };
 
     const ProgressBar = ({ current, total, color }) => (
-        <View style={[styles.progressBarBg, { backgroundColor: '#222' }]}>
+        <View style={[styles.progressBarBg, { backgroundColor: isDarkMode ? '#222' : '#EEF4FF' }]}>
             <View 
                 style={[
                     styles.progressBarFill, 
@@ -100,26 +100,30 @@ export default function Dashboard({ route, navigation }) {
     const MealCard = ({ title, data, type }) => (
         <TouchableOpacity 
             activeOpacity={0.9}
-            style={[styles.mealCard, { backgroundColor: '#111', borderColor: '#222' }]}
+            style={[styles.mealCard, { 
+                backgroundColor: isDarkMode ? '#111' : '#FFFFFF', 
+                borderColor: isDarkMode ? '#222' : '#E5E7EB',
+                ...(isDarkMode ? {} : { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width:0, height:4 }, elevation: 4 })
+            }]}
             onPress={() => navigation.navigate('Log Food', { mealType: title })}
         >
-            <View style={[styles.mealHeader, { borderBottomColor: '#222' }]}>
+            <View style={[styles.mealHeader, { borderBottomColor: isDarkMode ? '#222' : '#E5E7EB' }]}>
                 <View style={styles.mealTitleRow}>
                     <Image source={NUTRITION_ICONS[type]} style={styles.mealIconImg} />
-                    <Text style={[styles.mealTitle, { color: '#fff' }]}>{title}</Text>
+                    <Text style={[styles.mealTitle, { color: isDarkMode ? '#fff' : '#111827' }]}>{title}</Text>
                 </View>
-                <Text style={[styles.mealKcal, { color: theme.primary }]}>
+                <Text style={[styles.mealKcal, { color: isDarkMode ? theme.primary : '#22C55E' }]}>
                     {data.reduce((a, c) => a + c.calories, 0)} kcal
                 </Text>
             </View>
             {data.length === 0 ? (
-                <Text style={[styles.emptyText, { color: '#666' }]}>Log your {title.toLowerCase()}...</Text>
+                <Text style={[styles.emptyText, { color: isDarkMode ? '#666' : '#6B7280' }]}>Log your {title.toLowerCase()}...</Text>
             ) : (
                 data.map((item, i) => (
                     <View key={i} style={styles.foodRow}>
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.foodName, { color: '#fff' }]}>{item.food_name}</Text>
-                            <Text style={[styles.foodCal, { color: '#666' }]}>{item.calories} kcal</Text>
+                            <Text style={[styles.foodName, { color: isDarkMode ? '#fff' : '#111827' }]}>{item.food_name}</Text>
+                            <Text style={[styles.foodCal, { color: isDarkMode ? '#666' : '#6B7280' }]}>{item.calories} kcal</Text>
                         </View>
                         <TouchableOpacity onPress={() => deleteFood(item.id)} style={styles.deleteIcon}>
                             <Trash2 size={16} color="#ef4444" opacity={0.6} />
@@ -143,54 +147,58 @@ export default function Dashboard({ route, navigation }) {
         : null;
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? theme.bg : '#F7F8FC' }]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 
                 {/* Header Section */}
                 <View style={styles.header}>
                     <View>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={[styles.greeting, { color: theme.text }]}>Hi, {user?.name?.split(' ')[0]}</Text>
+                            <Text style={[styles.greeting, { color: isDarkMode ? theme.text : '#111827' }]}>Hi, {user?.name?.split(' ')[0]}</Text>
                             <Hand size={24} color="#FFD700" style={{ marginLeft: 8 }} />
                         </View>
-                        <Text style={[styles.dateText, { color: theme.textSecondary }]}>
+                        <Text style={[styles.dateText, { color: isDarkMode ? theme.textSecondary : '#6B7280' }]}>
                             {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
                         </Text>
                     </View>
                     <TouchableOpacity 
                         onPress={() => navigation.navigate('Profile')}
-                        style={[styles.avatarContainer, { borderColor: theme.primary }]}
+                        style={[styles.avatarContainer, { borderColor: isDarkMode ? theme.primary : '#22C55E' }]}
                     >
                         {avatarSource ? (
                             <Image source={avatarSource} style={styles.avatar} />
                         ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.primaryLight }]}>
-                                <Text style={[styles.avatarInitial, { color: theme.primary }]}>{user?.name?.charAt(0)}</Text>
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: isDarkMode ? theme.primaryLight : '#EEF4FF' }]}>
+                                <Text style={[styles.avatarInitial, { color: isDarkMode ? theme.primary : '#22C55E' }]}>{user?.name?.charAt(0)}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
                 </View>
 
                 {/* Main Calorie Ring / Summary Card */}
-                <View style={[styles.summaryCard, { backgroundColor: '#0A0A0A', borderColor: '#1A1A1A' }]}>
+                <View style={[styles.summaryCard, { 
+                    backgroundColor: isDarkMode ? '#0A0A0A' : '#FFFFFF', 
+                    borderColor: isDarkMode ? '#1A1A1A' : '#E5E7EB',
+                    ...(isDarkMode ? {} : { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width:0, height:4 }, elevation: 4 })
+                }]}>
                     <View style={styles.calorieStats}>
                         <View style={styles.statBox}>
-                            <View style={[styles.statIconContainer, { backgroundColor: '#1A1A1A' }]}>
+                            <View style={[styles.statIconContainer, { backgroundColor: isDarkMode ? '#1A1A1A' : '#EEF4FF' }]}>
                                 <Image source={DIET_IMAGES.kcal_icon} style={styles.kcalStatIcon} />
                             </View>
-                            <Text style={[styles.statVal, { color: '#fff' }]}>{summary.calories}</Text>
-                            <Text style={[styles.statLab, { color: '#666' }]}>EATEN</Text>
+                            <Text style={[styles.statVal, { color: isDarkMode ? '#fff' : '#111827' }]}>{summary.calories}</Text>
+                            <Text style={[styles.statLab, { color: isDarkMode ? '#666' : '#6B7280' }]}>EATEN</Text>
                         </View>
 
                         <View style={styles.ringContainer}>
                             <Svg width="160" height="160">
                                 <Circle 
                                     cx="80" cy="80" r="70" 
-                                    stroke="#1A1A1A" strokeWidth="12" fill="none" 
+                                    stroke={isDarkMode ? '#1A1A1A' : '#EEF4FF'} strokeWidth="12" fill="none" 
                                 />
                                 <Circle 
                                     cx="80" cy="80" r="70" 
-                                    stroke={theme.primary} strokeWidth="12" fill="none" 
+                                    stroke={isDarkMode ? theme.primary : '#22C55E'} strokeWidth="12" fill="none" 
                                     strokeDasharray={2 * Math.PI * 70}
                                     strokeDashoffset={(2 * Math.PI * 70) * (1 - Math.min(summary.calories / dailyGoal, 1))}
                                     strokeLinecap="round"
@@ -198,26 +206,26 @@ export default function Dashboard({ route, navigation }) {
                                 />
                             </Svg>
                             <View style={styles.ringCenterText}>
-                                <Text style={[styles.ringLabel, { color: '#666' }]}>CALORIES</Text>
-                                <Text style={[styles.remainingVal, { color: '#fff' }]}>{Math.max(dailyGoal - summary.calories, 0)}</Text>
-                                <Text style={[styles.remainingLab, { color: theme.primary }]}>Left</Text>
-                                <Text style={[styles.goalSubText, { color: '#666' }]}>of {dailyGoal} kcal</Text>
+                                <Text style={[styles.ringLabel, { color: isDarkMode ? '#666' : '#6B7280' }]}>CALORIES</Text>
+                                <Text style={[styles.remainingVal, { color: isDarkMode ? '#fff' : '#111827' }]}>{Math.max(dailyGoal - summary.calories, 0)}</Text>
+                                <Text style={[styles.remainingLab, { color: isDarkMode ? theme.primary : '#22C55E' }]}>Left</Text>
+                                <Text style={[styles.goalSubText, { color: isDarkMode ? '#666' : '#6B7280' }]}>of {dailyGoal} kcal</Text>
                             </View>
                         </View>
 
                         <View style={styles.statBox}>
-                            <View style={[styles.statIconContainer, { backgroundColor: '#1A1A1A' }]}>
-                                <Target size={24} color={theme.primary} />
+                            <View style={[styles.statIconContainer, { backgroundColor: isDarkMode ? '#1A1A1A' : '#FBCFE8' }]}>
+                                <Target size={24} color={isDarkMode ? theme.primary : '#E11D48'} />
                             </View>
-                            <Text style={[styles.statVal, { color: '#fff' }]}>{dailyGoal}</Text>
-                            <Text style={[styles.statLab, { color: '#666' }]}>GOAL</Text>
+                            <Text style={[styles.statVal, { color: isDarkMode ? '#fff' : '#111827' }]}>{dailyGoal}</Text>
+                            <Text style={[styles.statLab, { color: isDarkMode ? '#666' : '#6B7280' }]}>GOAL</Text>
                         </View>
                     </View>
                     
-                    <ProgressBar current={summary.calories} total={dailyGoal} color={theme.primary} />
+                    <ProgressBar current={summary.calories} total={dailyGoal} color={isDarkMode ? theme.primary : '#22C55E'} />
                     
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
-                        <Text style={[styles.motivationalText, { color: '#666' }]}>
+                        <Text style={[styles.motivationalText, { color: isDarkMode ? '#666' : '#6B7280' }]}>
                             You're doing great! Keep it up.
                         </Text>
                         <Heart size={14} color="#ef4444" fill="#ef4444" style={{ marginLeft: 4 }} />
@@ -227,7 +235,10 @@ export default function Dashboard({ route, navigation }) {
                 {/* Quick Action Grid */}
                 <View style={styles.actionGrid}>
                     <TouchableOpacity 
-                        style={[styles.actionBtnFull, { backgroundColor: theme.primary }]}
+                        style={[styles.actionBtnFull, { 
+                            backgroundColor: isDarkMode ? theme.primary : '#22C55E',
+                            ...(isDarkMode ? {} : { shadowColor: '#22C55E', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width:0, height:4 }, elevation: 4 })
+                        }]}
                         onPress={() => navigation.navigate('Log Food')}
                     >
                         <Image source={require('../assets/nutrition/breakfast.png')} style={styles.actionIconImg} />
@@ -236,32 +247,42 @@ export default function Dashboard({ route, navigation }) {
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
-                        style={[styles.actionBtnFull, { backgroundColor: '#111', borderColor: '#222', borderWidth: 1 }]}
+                        style={[styles.actionBtnFull, { 
+                            backgroundColor: isDarkMode ? '#111' : '#FFFFFF', 
+                            borderColor: isDarkMode ? '#222' : '#E5E7EB', 
+                            borderWidth: 1,
+                            ...(isDarkMode ? {} : { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width:0, height:4 }, elevation: 4 })
+                        }]}
                         onPress={() => navigation.navigate('Scan Food')}
                     >
-                        <View style={styles.scanIconBox}>
-                            <Scan size={24} color={theme.primary} />
+                        <View style={[styles.scanIconBox, { backgroundColor: isDarkMode ? '#1A1A1A' : '#EEF4FF' }]}>
+                            <Scan size={24} color={isDarkMode ? theme.primary : '#22C55E'} />
                         </View>
-                        <Text style={[styles.actionBtnLabel, { color: '#fff' }]}>Scan Meal</Text>
-                        <ChevronRight size={24} color="#666" />
+                        <Text style={[styles.actionBtnLabel, { color: isDarkMode ? '#fff' : '#111827' }]}>Scan Meal</Text>
+                        <ChevronRight size={24} color={isDarkMode ? '#666' : '#6B7280'} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Water Tracker */}
-                <View style={[styles.waterCard, { backgroundColor: '#111', borderColor: '#222', borderWidth: 1 }]}>
+                <View style={[styles.waterCard, { 
+                    backgroundColor: isDarkMode ? '#111' : '#FFFFFF', 
+                    borderColor: isDarkMode ? '#222' : '#E5E7EB', 
+                    borderWidth: 1,
+                    ...(isDarkMode ? {} : { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width:0, height:4 }, elevation: 4 })
+                }]}>
                     <View style={styles.waterInfo}>
                         <View style={styles.waterTitleRow}>
                             <Image source={HYDRATION_ASSETS.main} style={styles.waterIconImg} />
                             <View>
-                                <Text style={[styles.waterTitle, { color: '#fff' }]}>Hydration</Text>
-                                <Text style={[styles.waterSub, { color: '#666' }]}>Stay refreshed</Text>
+                                <Text style={[styles.waterTitle, { color: isDarkMode ? '#fff' : '#111827' }]}>Hydration</Text>
+                                <Text style={[styles.waterSub, { color: isDarkMode ? '#666' : '#6B7280' }]}>Stay refreshed</Text>
                             </View>
                         </View>
-                        <Text style={[styles.waterValue, { color: theme.primary }]}>{glassCount}/{GLASS_GOAL}</Text>
+                        <Text style={[styles.waterValue, { color: isDarkMode ? theme.primary : '#22C55E' }]}>{glassCount}/{GLASS_GOAL}</Text>
                     </View>
                     <View style={styles.waterControls}>
-                        <TouchableOpacity style={[styles.waterBtnNew, { backgroundColor: '#1A1A1A' }]} onPress={() => updateWater(-1)}>
-                            <Minus size={20} color="#666" />
+                        <TouchableOpacity style={[styles.waterBtnNew, { backgroundColor: isDarkMode ? '#1A1A1A' : '#EEF4FF' }]} onPress={() => updateWater(-1)}>
+                            <Minus size={20} color={isDarkMode ? '#666' : '#6B7280'} />
                         </TouchableOpacity>
                         
                         <View style={styles.glassRow}>
@@ -270,20 +291,20 @@ export default function Dashboard({ route, navigation }) {
                                     key={i} 
                                     style={[
                                         styles.glassIndicator, 
-                                        { backgroundColor: i < glassCount ? theme.primary : '#222' }
+                                        { backgroundColor: i < glassCount ? (isDarkMode ? theme.primary : '#22C55E') : (isDarkMode ? '#222' : '#E5E7EB') }
                                     ]} 
                                 />
                             ))}
                         </View>
 
-                        <TouchableOpacity style={[styles.waterBtnNew, { backgroundColor: theme.primary }]} onPress={() => updateWater(1)}>
+                        <TouchableOpacity style={[styles.waterBtnNew, { backgroundColor: isDarkMode ? theme.primary : '#22C55E' }]} onPress={() => updateWater(1)}>
                             <Plus size={20} color="#fff" />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Meals */}
-                <Text style={[styles.sectionTitle, { color: '#fff' }]}>Today's Nutrition</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#111827' }]}>Today's Nutrition</Text>
                 <MealCard title="Breakfast" data={meals.Breakfast} type="breakfast" />
                 <MealCard title="Lunch" data={meals.Lunch} type="lunch" />
                 <MealCard title="Snacks" data={meals.Snacks} type="snacks" />

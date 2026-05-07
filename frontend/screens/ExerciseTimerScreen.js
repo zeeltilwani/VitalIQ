@@ -183,7 +183,7 @@ export default function ExerciseTimerScreen({ route, navigation }) {
     const strokeDashoffset = circumference * (1 - progress);
 
     return (
-        <View style={[styles.container, { backgroundColor: '#000', paddingTop: insets.top }]}>
+        <View style={[styles.container, { backgroundColor: '#000', paddingTop: insets.top, paddingBottom: insets.bottom + 25 }]}>
             {/* Header / Progress */}
             <View style={styles.header}>
                 <View style={styles.progressHeader}>
@@ -287,11 +287,20 @@ export default function ExerciseTimerScreen({ route, navigation }) {
                     <Text style={[styles.timerUnit, { color: theme.textSecondary }]}>SECONDS</Text>
                 </View>
 
-                {/* Controls */}
-                <View style={styles.controlsRow}>
-                    <TouchableOpacity 
-                        style={[styles.controlCircleBtn, { borderColor: theme.danger }]} 
-                        onPress={() => {
+            </View>
+
+            {/* Controls */}
+            <View style={[styles.controlsRow, {
+                position: 'absolute',
+                bottom: insets.bottom + 12,
+                left: 0,
+                right: 0,
+                paddingHorizontal: 20,
+                marginBottom: insets.bottom > 0 ? 10 : 0,
+            }]}>
+                <TouchableOpacity 
+                    style={[styles.controlCircleBtn, { borderColor: theme.danger }]} 
+                    onPress={() => {
                             // Stop timer immediately
                             if (timerRef.current) {
                                 clearInterval(timerRef.current);
@@ -327,7 +336,6 @@ export default function ExerciseTimerScreen({ route, navigation }) {
                         <ChevronLast size={32} color={theme.primary} />
                         <Text style={[styles.controlLabel, { color: '#fff' }]}>Next</Text>
                     </TouchableOpacity>
-                </View>
             </View>
             
             {isReady && (
@@ -349,7 +357,7 @@ const styles = StyleSheet.create({
     progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
     progressFill: { height: '100%' },
 
-    content: { flex: 1, paddingHorizontal: SPACING.xl, justifyContent: 'space-between', paddingBottom: 60, paddingTop: 20 },
+    content: { flex: 1, paddingHorizontal: SPACING.xl, justifyContent: 'space-between', paddingBottom: 150, paddingTop: 20 },
     
     visualSection: { alignItems: 'center' },
     timerCircleContainer: {

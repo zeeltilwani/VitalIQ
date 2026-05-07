@@ -16,13 +16,13 @@ app = FastAPI()
 
 client = None
 if GROQ_API_KEY:
-    print(f"🔑 Groq API Key detected: {GROQ_API_KEY[:10]}...")
+    print(f"[INFO] Groq API Key detected: {GROQ_API_KEY[:10]}...")
     client = Groq(api_key=GROQ_API_KEY)
 else:
-    print("❌ ERROR: No GROQ_API_KEY found in .env")
+    print("[ERROR] No GROQ_API_KEY found in .env")
 
 ACTIVE_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-print(f"✅ [AI Startup] Active Model: {ACTIVE_MODEL}")
+print(f"[AI Startup] Active Model: {ACTIVE_MODEL}")
 
 PROMPT = """
 Analyze this food image and return ONLY a JSON object:
@@ -42,16 +42,16 @@ If not food, return {"error": "No food detected"}.
 
 @app.post("/predict")
 async def predict_food(file: UploadFile = File(...)):
-    print(f"\n📸 [AI] New request received: {file.filename}")
+    print(f"\n[AI] New request received: {file.filename}")
     try:
         if not client:
             return {"error": "GROQ_API_KEY not set"}
 
         contents = await file.read()
-        print(f"📦 [AI] File size: {len(contents)} bytes")
+        print(f"[AI] File size: {len(contents)} bytes")
         
         base64_image = base64.b64encode(contents).decode('utf-8')
-        print("🤖 [AI] Calling Groq Llama-Vision...")
+        print("[AI] Calling Groq Llama-Vision...")
 
         # Using the newest Llama 3.2 90B Vision model
         completion = client.chat.completions.create(
@@ -72,11 +72,11 @@ async def predict_food(file: UploadFile = File(...)):
         )
         
         raw_content = completion.choices[0].message.content
-        print(f"📝 [AI] Raw Response: {raw_content}")
+        print(f"[AI] Raw Response: {raw_content}")
         
         result = json.loads(raw_content)
         return result
         
     except Exception as e:
-        print(f"🔥 [AI] Error: {e}")
+        print(f"[AI] Error: {e}")
         return {"error": str(e)}

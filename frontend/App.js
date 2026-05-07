@@ -66,16 +66,16 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-function TabIcon({ name, focused, theme }) {
+function TabIcon({ name, focused, theme, isDarkMode }) {
     const size = 24;
-    const color = focused ? theme.primary : theme.textSecondary;
+    const color = focused ? (isDarkMode ? theme.primary : '#22C55E') : (isDarkMode ? theme.textSecondary : '#6B7280');
     const strokeWidth = focused ? 2.5 : 2;
 
     if (name === 'Home') {
         return (
             <View style={styles.iconWrapper}>
                 <Home size={size} color={color} strokeWidth={strokeWidth} />
-                {focused && <View style={[styles.homeIndicator, { backgroundColor: theme.primary }]} />}
+                {focused && <View style={[styles.homeIndicator, { backgroundColor: isDarkMode ? theme.primary : '#22C55E' }]} />}
             </View>
         );
     }
@@ -97,7 +97,7 @@ function TabIcon({ name, focused, theme }) {
         return (
             <View style={styles.iconWrapper}>
                 <User size={size} color={color} strokeWidth={strokeWidth} />
-                {focused && <View style={[styles.profileIndicator, { borderColor: theme.primary }]} />}
+                {focused && <View style={[styles.profileIndicator, { borderColor: isDarkMode ? theme.primary : '#22C55E' }]} />}
             </View>
         );
     }
@@ -107,15 +107,15 @@ function TabIcon({ name, focused, theme }) {
 function MainAppTabs({ route }) {
     const { user } = route.params || {};
     const insets = useSafeAreaInsets();
-    const { theme } = useTheme();
+    const { theme, isDarkMode } = useTheme();
 
     return (
         <View style={{ flex: 1, backgroundColor: theme.bg }}>
             <Tab.Navigator
                 screenOptions={({ route: tabRoute }) => ({
                     headerShown: false,
-                    tabBarActiveTintColor: theme.primary,
-                    tabBarInactiveTintColor: theme.textSecondary,
+                    tabBarActiveTintColor: isDarkMode ? theme.primary : '#22C55E',
+                    tabBarInactiveTintColor: isDarkMode ? theme.textSecondary : '#6B7280',
                     tabBarStyle: {
                         position: 'absolute',
                         bottom: insets.bottom > 0 ? insets.bottom : 12,
@@ -123,17 +123,18 @@ function MainAppTabs({ route }) {
                         right: 12,
                         borderRadius: 20,
                         height: 64,
-                        backgroundColor: theme.surface,
-                        borderTopWidth: 0,
+                        backgroundColor: isDarkMode ? theme.surface : '#FFFFFF',
+                        borderTopWidth: isDarkMode ? 0 : 1,
+                        borderTopColor: isDarkMode ? 'transparent' : '#E5E7EB',
                         paddingBottom: 8,
                         paddingTop: 8,
-                        elevation: 10,
+                        elevation: isDarkMode ? 10 : 4,
                         shadowColor: '#000',
-                        shadowOpacity: 0.25,
+                        shadowOpacity: isDarkMode ? 0.25 : 0.06,
                         shadowRadius: 10,
                         shadowOffset: { width: 0, height: 4 },
                         borderWidth: 1,
-                        borderColor: theme.border,
+                        borderColor: isDarkMode ? theme.border : '#E5E7EB',
                     },
                     tabBarLabelStyle: {
                         fontSize: 10,
@@ -141,7 +142,7 @@ function MainAppTabs({ route }) {
                         paddingBottom: 4,
                     },
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon name={tabRoute.name} focused={focused} theme={theme} />
+                        <TabIcon name={tabRoute.name} focused={focused} theme={theme} isDarkMode={isDarkMode} />
                     ),
                 })}
             >
